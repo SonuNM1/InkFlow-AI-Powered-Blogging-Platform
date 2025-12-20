@@ -1,11 +1,14 @@
 import mongoose from "mongoose";
+import chalk from "chalk";
 const connectDB = async () => {
     try {
-        mongoose.connect(process.env.MONGO_URI);
-        console.log("DB Connected");
+        mongoose.connect(process.env.MONGO_URI, {
+            dbName: "blog"
+        });
+        console.log(chalk.green.bold("DB Connected"));
     }
     catch (error) {
-        console.log("DB Connect error: ", error);
+        console.log(chalk.red.bold("DB Connect error: ", error));
     }
 };
 export default connectDB;
