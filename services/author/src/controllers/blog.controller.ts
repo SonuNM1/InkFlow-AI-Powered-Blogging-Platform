@@ -57,7 +57,7 @@ export const createBlog = TryCatch(async (req: AutheticatedRequest, res) => {
 
 export const updateBlog = TryCatch(async (req: AutheticatedRequest, res) => {
   const { id } = req.params;
-  const { title, description, blogcontent, author } = req.body;
+  const { title, description, blogcontent, author, category } = req.body;
 
   const file = req.file;
 
@@ -71,7 +71,7 @@ export const updateBlog = TryCatch(async (req: AutheticatedRequest, res) => {
     });
   }
 
-  if (blog[0].author !== req.user) {
+  if (blog[0].author !== req.userId) {
     return res.status(404).json({
       message: "You are not author of this blog",
     });
@@ -92,10 +92,10 @@ export const updateBlog = TryCatch(async (req: AutheticatedRequest, res) => {
       folder: "blogs",
     });
 
-    imageUrl = cloud.secure_url ; 
+    imageUrl = cloud.secure_url;
   }
 
-  const updatedBlog = await sql `
+  const updatedBlog = await sql`
     UPDATE blogs SET 
         title=${title || blog[0].title},
         description=${description || blog[0].description},
@@ -105,10 +105,45 @@ export const updateBlog = TryCatch(async (req: AutheticatedRequest, res) => {
 
         WHERE id=${id}
         RETURNING *
-  ` ; 
+  `;
 
   res.json({
-    message: "Blog updated", 
-    blog: updatedBlog[0]
+    message: "Blog updated",
+    blog: updatedBlog[0],
+  });
+});
+
+export const deleteBlog = TryCatch(async (req: AutheticatedRequest, res) => {
+  const blog = await sql`
+    SELECT * FROM blogs WHERE id=${req.params.id}
+  `;
+
+  if (!blog.length) {
+    return res.status(404).json({
+      message: "No blog with this id",
+    });
+  }
+
+  if (blog[0].author !== req.userId) {
+    return res.status(404).json({
+      message: "You are not author of this blog",
+    });
+  }
+
+  await sql`
+    DELETE FROM savedblogs WHERE blogid=${req.params.id}
+  `
+
+  await sql`
+    DELETE FROM comments WHERE blogid=${req.params.id}
+  `
+
+  await sql`
+    DELETE FROM blogs WHERE id=${req.params.id}
+  `
+
+  res.json({
+    message: "Blog deleted"
   })
+
 });

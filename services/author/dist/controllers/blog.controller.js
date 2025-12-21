@@ -45,7 +45,7 @@ export const createBlog = TryCatch(async (req, res) => {
 });
 export const updateBlog = TryCatch(async (req, res) => {
     const { id } = req.params;
-    const { title, description, blogcontent, author } = req.body;
+    const { title, description, blogcontent, author, category } = req.body;
     const file = req.file;
     const blog = await sql `
         SELECT * FROM blogs WHERE id = ${id}
@@ -55,7 +55,7 @@ export const updateBlog = TryCatch(async (req, res) => {
             message: "No blog with this id",
         });
     }
-    if (blog[0].author !== req.user) {
+    if (blog[0].author !== req.userId) {
         return res.status(404).json({
             message: "You are not author of this blog",
         });
@@ -86,7 +86,34 @@ export const updateBlog = TryCatch(async (req, res) => {
   `;
     res.json({
         message: "Blog updated",
-        blog: updatedBlog[0]
+        blog: updatedBlog[0],
+    });
+});
+export const deleteBlog = TryCatch(async (req, res) => {
+    const blog = await sql `
+    SELECT * FROM blogs WHERE id=${req.params.id}
+  `;
+    if (!blog.length) {
+        return res.status(404).json({
+            message: "No blog with this id",
+        });
+    }
+    if (blog[0].author !== req.userId) {
+        return res.status(404).json({
+            message: "You are not author of this blog",
+        });
+    }
+    await sql `
+    DELETE FROM savedblogs WHERE blogid=${req.params.id}
+  `;
+    await sql `
+    DELETE FROM comments WHERE blogid=${req.params.id}
+  `;
+    await sql `
+    DELETE FROM blogs WHERE id=${req.params.id}
+  `;
+    res.json({
+        message: "Blog deleted"
     });
 });
 //# sourceMappingURL=blog.controller.js.map
