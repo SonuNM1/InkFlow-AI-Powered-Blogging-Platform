@@ -4,6 +4,7 @@ import connectDB from "./utils/db.js";
 import chalk from "chalk";
 import userRoutes from './routes/user.route.js';
 import { v2 as cloudinary } from 'cloudinary';
+import cors from 'cors';
 dotenv.config();
 // cloudinary config 
 cloudinary.config({
@@ -12,6 +13,7 @@ cloudinary.config({
     api_secret: process.env.CLOUD_API_SECRET
 });
 const app = express();
+app.use(cors());
 connectDB();
 // middleware 
 app.use(express.json());
