@@ -848,3 +848,143 @@ It might seem fine in small apps, but it becomes inefficient and even risky in m
 
 
 ### RabbitMQ-Based Cache Invalidation is way better 
+
+
+Here's how it works: 
+
+1. createBlog() only publishes a message: 
+
+    publishToQueue(
+        "cache-invalidation",
+        {
+            keys: ["allBlogs"],
+            revalidate: true 
+        }
+    )
+
+2. It deletes the key and optionally repopulates the cache from the DB immediately. 
+
+**Advantages**
+
+1. Decoupled Logic: Your core service only focuses on DB writes. Cache handling is managed separately, in a specialized service. 
+
+2. Revalidation = Fast Next Requests 
+
+    The moment cache is invalidated, we can instantly fetch fresh data from DB and re-store in Redis. So the next user doesn't hit the DB - they hit the updated cache. 
+
+3. Less load on DB: In direction invalidation, DB gets hit every time cache is deleted (and especially under high traffic). One-time fetch by the consumer service
+
+    All subsequent users hit Redis - saving MongoDB from repeated hits
+
+4. Reliable and Scalable
+
+    If Redis is down, RabbitMQ holds the message. If you scale to 10 microservices tomorrow, all can listen to the same RabbitMQ queue without rewriting code. 
+
+
+**What RabbitMQ actually is**
+
+
+RabbitMQ = Message Broker. It sits between services and passes messages quickly. 
+
+Instead of: 
+    
+    Service A -> calls Service B directly 
+
+We do: 
+
+    Service A -> RabbitMQ -> Service B
+
+This means: 
+
+    - Services don't depend on each other directly 
+
+    - Services don't need to be alive at the same time 
+
+    - Work can be async 
+
+    - System becomes scalable + fault tolerant 
+
+
+**Why REST calls are not enough in real systems**
+
+
+Right now we are doing this: 
+
+    Blog Service
+        └─ creates blog
+                └─ clears Redis cache
+
+
+This is tight coupling. Problems: 
+
+- If Redis is down -> blog creation fails 
+
+- If later you add more services -> more calls 
+
+- Blog service becomes heavy 
+
+
+**RabbitMQ mental model**
+
+
+RabbitMQ has 4 core concepts: 
+
+    Producer -> Exchange -> Queue -> Consumer 
+
+Example: 
+
+    Blog Service (Producer)
+        |
+        | sends message: "BLOG_CREATED"
+        |
+        v
+    RabbitMQ Exchange 
+        |
+        |
+        v
+    Cache Service Queue -> Cache Worker (Consumer)
+
+
+**Where RabbitMQ is really used in companies**
+
+1. Background Jobs: Send email, Generate PDF, Resize images, Notifications 
+
+2. Event-driven systems: 
+
+    User registered -> send welcome email 
+
+    Order placed -> Inventory update 
+
+    Blog Created -> Cache Invalidation 
+
+3. Microservices Communication
+
+    Service A emits event, Service B reacts, No direct coupling 
+
+
+
+- RabbitMQ is not a JavaScript library. It's a standalone server application, just like MongoDB, Redis, PostgreSQL. 
+
+
+## RabbitMQ Setup
+
+
+- `docker pull rabbitmq`
+
+- docker run -d --hostname rabbitmq-host --name rabbitmq-container -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=admin123 -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+    docker run: create and start a container from an image 
+
+    -d: detached mode. Runs RabbitMQ in the background. Without -d, our terminal would be stuck showing logs 
+
+    --hostname rabbitmq-host: Sets the internal hostname inside the container
+
+    --name rabbitmq-container: Gives the container a human-readable name 
+
+    environment variable: -e RABBITMQ_DEFAULT_USER=admin, -e RABBITMQ_DEFAULT_PASS=admin123
+
+        With this, we can connect to our Node.js app. We can login to dashboard. 
+
+    Port mappings: -p 5672:5672 (AMQP port), -p 15672:15672 (RabbitMQ Management UI) -> Login with username:admin, password:admin123
+
+        This is why rabbitmq:3-management is used 
