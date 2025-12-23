@@ -988,3 +988,20 @@ Example:
     Port mappings: -p 5672:5672 (AMQP port), -p 15672:15672 (RabbitMQ Management UI) -> Login with username:admin, password:admin123
 
         This is why rabbitmq:3-management is used 
+
+
+- npm i amqplib 
+
+    Node.js library used to communicate to RabbitMQ. It allows our Node.js app to: send and receive messages from RabbitMQ. 
+
+    amqplib = the bridge between Node.js and RabbitMQ 
+
+    AMQP = Advanced Message Queuing Protocol: It is a protocol (set of rules) for messaging
+
+    Why do we need amqplib? 
+
+        RabbitMQ is a server, runs separately on Docker / VM / Cloud. Nodejs cannot talk to RabbitMQ directly. 
+
+        So we need: 
+
+            Node.js app ---> amqplib ---> RabbitMQ Server 

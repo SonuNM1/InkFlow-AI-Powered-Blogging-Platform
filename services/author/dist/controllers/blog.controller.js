@@ -2,6 +2,7 @@ import TryCatch from "../utils/TryCatch.js";
 import getBuffer from "../utils/dataUri.js";
 import cloudinary from "cloudinary";
 import { sql } from "../utils/db.js";
+import { invalidateCacheJob } from "../utils/RabbitMQ.js";
 export const createBlog = TryCatch(async (req, res) => {
     const { title, description, blogcontent, category } = req.body;
     const file = req.file;
@@ -38,6 +39,7 @@ export const createBlog = TryCatch(async (req, res) => {
             ${req.userId}
         ) RETURNING *
         `;
+    await invalidateCacheJob(["blogs:*"]); // invalidate 
     res.json({
         message: "Blog created",
         blog: result[0],
@@ -84,6 +86,7 @@ export const updateBlog = TryCatch(async (req, res) => {
         WHERE id=${id}
         RETURNING *
   `;
+    await invalidateCacheJob(["blogs:*", `blog:${id}`]); // invalidate 
     res.json({
         message: "Blog updated",
         blog: updatedBlog[0],
@@ -112,6 +115,7 @@ export const deleteBlog = TryCatch(async (req, res) => {
     await sql `
     DELETE FROM blogs WHERE id=${req.params.id}
   `;
+    await invalidateCacheJob(["blogs:*", `blog:${req.params.id}`]); // invalidate 
     res.json({
         message: "Blog deleted"
     });
