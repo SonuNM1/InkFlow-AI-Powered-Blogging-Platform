@@ -3,6 +3,7 @@ import getBuffer from "../utils/dataUri.js";
 import cloudinary from "cloudinary";
 import { sql } from "../utils/db.js";
 import { invalidateCacheJob } from "../utils/RabbitMQ.js";
+import { GoogleGenAI } from "@google/genai";
 export const createBlog = TryCatch(async (req, res) => {
     const { title, description, blogcontent, category } = req.body;
     const file = req.file;
@@ -39,7 +40,7 @@ export const createBlog = TryCatch(async (req, res) => {
             ${req.userId}
         ) RETURNING *
         `;
-    await invalidateCacheJob(["blogs:*"]); // invalidate 
+    await invalidateCacheJob(["blogs:*"]); // invalidate
     res.json({
         message: "Blog created",
         blog: result[0],
@@ -86,7 +87,7 @@ export const updateBlog = TryCatch(async (req, res) => {
         WHERE id=${id}
         RETURNING *
   `;
-    await invalidateCacheJob(["blogs:*", `blog:${id}`]); // invalidate 
+    await invalidateCacheJob(["blogs:*", `blog:${id}`]); // invalidate
     res.json({
         message: "Blog updated",
         blog: updatedBlog[0],
@@ -115,9 +116,44 @@ export const deleteBlog = TryCatch(async (req, res) => {
     await sql `
     DELETE FROM blogs WHERE id=${req.params.id}
   `;
-    await invalidateCacheJob(["blogs:*", `blog:${req.params.id}`]); // invalidate 
+    await invalidateCacheJob(["blogs:*", `blog:${req.params.id}`]); // invalidate
     res.json({
-        message: "Blog deleted"
+        message: "Blog deleted",
     });
+});
+export const AITitleResponse = TryCatch(async (req, res) => {
+    const { text } = req.body;
+    const prompt = `Correct the grammar of the following blog title and return only the corrected title without any additional text, formatting, or symbols: "${text}"`;
+    let result;
+    const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+    });
+    async function main() {
+        // Call Gemini-AI model
+        const response = await ai.models.generateContent({
+            model: "gemini-2.0-flash",
+            contents: prompt,
+        });
+        let rawtext = response.text; // safety extract text
+        // Guard clause: AI returned nothing
+        if (!rawtext) {
+            res.status(400).json({
+                message: "Something went wrong",
+            });
+            return;
+        }
+        // Cleaning AI response: AI often returns markdown like: **bold**, *italic*, `code`, ~strike~, newlines, etc. We want clean plain text for DB/UI usage
+        const cleanedText = rawText
+            .replace(/\*\*/g, "") // remove **bold**
+            .replace(/\*/g, "") // remove *italic*
+            .replace(/_/g, "") // remove _underscores_
+            .replace(/`/g, "") // remove `code`
+            .replace(/~/g, "") // remove ~strike~
+            .replace(/\r?\n|\r/g, " ") // replace new lines with space
+            .replace(/\s+/g, " ") // collapse multiple spaces
+            .trim(); // remove leading/trailing spaces
+        await main();
+        res.json(result);
+    }
 });
 //# sourceMappingURL=blog.controller.js.map

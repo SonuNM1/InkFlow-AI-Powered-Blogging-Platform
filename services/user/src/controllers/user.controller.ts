@@ -6,7 +6,6 @@ import getBuffer from "../utils/dataUri.js";
 import { v2 as cloudinary } from 'cloudinary';
 import { OAuth2Client } from "../utils/GoogleConfig.js";
 import axios from "axios";
-
 /*
 Controller logic for Google login 
 
@@ -166,3 +165,4 @@ export const updateProfilePic = TryCatch(async(req: AutheticatedRequest, res) =>
   })
 
 })
+
