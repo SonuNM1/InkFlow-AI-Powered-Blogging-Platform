@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogIn } from "lucide-react";
+import { Menu, X, LogIn, CircleUserRoundIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAppData } from "@/app/context/AppContext";
 
 /*
   Navbar is a CLIENT COMPONENT because:
@@ -15,11 +16,12 @@ import { cn } from "@/lib/utils";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false); // mobile menu toggle
 
+  const { loading, isAuth } = useAppData();
+
   return (
     <nav className="sticky top-0 z-50 bg-white border-b">
       {/* Main navbar container */}
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-
         {/* Logo */}
         <Link href="/" className="text-2xl font-bold text-gray-900">
           InkFlow
@@ -35,12 +37,21 @@ const Navbar = () => {
             Saved
           </Link>
 
-          <Link href="/login">
-            <Button size="sm">
-              <LogIn className="w-4 h-4 mr-2" />
-              Login
-            </Button>
-          </Link>
+          {loading ? (
+            ""
+          ) : (
+            <li>
+              {isAuth ? (
+                <Link href={"/profile"} className="hover:text-blue-500">
+                  <CircleUserRoundIcon />
+                </Link>
+              ) : (
+                <Link href={"/login"} className="hover:text-blue-500">
+                  <LogIn />
+                </Link>
+              )}
+            </li>
+          )}
         </div>
 
         {/* Mobile Menu Button */}

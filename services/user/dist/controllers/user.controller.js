@@ -20,7 +20,7 @@ export const loginUser = TryCatch(async (req, res) => {
     }
     const googleRes = await OAuth2Client.getToken(code);
     OAuth2Client.setCredentials(googleRes.tokens);
-    const userRes = await axios.get(`https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token =${googleRes.tokens.access_token}`);
+    const userRes = await axios.get(`https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`);
     const { email, name, picture } = userRes.data;
     let user = await User.findOne({ email });
     if (!user) {

@@ -1,12 +1,17 @@
 import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
 import connectDB from "./utils/db.js";
 import chalk from "chalk";
 import userRoutes from './routes/user.route.js';
 import { v2 as cloudinary } from 'cloudinary';
 import cors from 'cors';
-dotenv.config();
 // cloudinary config 
+if (!process.env.CLOUD_NAME ||
+    !process.env.CLOUD_API_KEY ||
+    !process.env.CLOUD_API_SECRET) {
+    throw new Error("Cloudinary env variables are missing");
+}
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
     api_key: process.env.CLOUD_API_KEY,

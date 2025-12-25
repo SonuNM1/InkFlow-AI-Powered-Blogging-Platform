@@ -51,7 +51,18 @@ export const isAuth = async (
 
         const token = authHeader.split(" ")[1] ; 
 
+        if(!token){
+            res.status(401).json({
+                message: "Unauthorized"
+            })
+            return ; 
+        }
+
         // Verify JWT 
+
+        if(!process.env.JWT_SECRET){
+            throw new Error("JWT_SECRET not defined")
+        }
 
         const decoded = jwt.verify(
             token,
