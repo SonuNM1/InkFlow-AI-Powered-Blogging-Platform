@@ -13,10 +13,11 @@ import {
 } from "@/components/ui/select";
 import { RefreshCw } from "lucide-react";
 import Cookies from "js-cookie";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { author_service } from "@/app/context/AppContext";
 import toast from "react-hot-toast";
+import axios from "axios";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
@@ -44,6 +45,20 @@ const AddBlog = () => {
     blogContent: "",
   });
 
+  useEffect(() => {
+    localStorage.setItem("blogDraft", JSON.stringify(formData)) ; 
+  }, [formData])
+
+  useEffect(() => {
+    const saved = localStorage.getItem("blogDraft") ; 
+
+    if(saved){
+      const parsed = JSON.parse(saved) ; 
+      setFormData(parsed) ; 
+      setContent(parsed.blogContent || "")
+    }
+  }, [])
+
   const handleInputChange = (e: any) => {
     setFormData({
       ...formData,
@@ -67,7 +82,7 @@ const AddBlog = () => {
 
     formDataToSend.append("title", formData.title);
     formDataToSend.append("description", formData.description);
-    formDataToSend.append("blogContent", formData.blogContent);
+    formDataToSend.append("blogcontent", formData.blogContent);
     formDataToSend.append("category", formData.category);
 
     if (formData.image) {
@@ -95,6 +110,9 @@ const AddBlog = () => {
         image: null,
         blogContent: "",
       });
+
+      localStorage.removeItem("blogDraft") ; 
+      setContent("") ; 
     } catch (error) {
         toast.error("Error while adding blog.") ; 
         console.log("handle submit error: ", error)
@@ -191,6 +209,10 @@ const AddBlog = () => {
                 tabIndex={1}
                 onBlur={(newContent) => {
                   setContent(newContent);
+                  setFormData({
+                    ...formData, 
+                    blogContent: newContent
+                  })
                 }}
               />
             </div>

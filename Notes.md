@@ -1005,3 +1005,29 @@ Example:
         So we need: 
 
             Node.js app ---> amqplib ---> RabbitMQ Server 
+
+
+
+## Hydration - NextJS 
+
+
+Next.js works in 2 phases: 
+
+1. Phase 1 - Server 
+
+    Next.js runs your React code on the server. Generates HTML. Sends that HTML to the browser. 
+
+    This is why pages load fast. 
+
+2. Phase 2 - Browser (Hydration)
+
+    React runs again in the browser. React attaches JS logic (events, state) to the already-existing HTML. 
+
+    This process = Hydration 
+
+
+**Hydration issue = Mismatch**
+
+A hydration error happens when: HTML generated on the server ≠ HTML generated in the browser. 
+
+    Server gives one value. Client gives another value. (Server HTML ≠ Client HTML) -> hydration error
