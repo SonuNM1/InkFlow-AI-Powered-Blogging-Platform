@@ -30,7 +30,7 @@ const LoginPage = () => {
 
   const {isAuth, setIsAuth, loading, setLoading, setUser} = useAppData() ; 
 
-  if(isAuth) return redirect("/") ; 
+  if(isAuth) return redirect("/blogs") ; 
 
   const responseGoogle = async(authResult: any) => {
     try{

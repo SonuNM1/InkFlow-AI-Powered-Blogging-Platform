@@ -2,6 +2,7 @@ import type { Metadata } from "next"; // this imports the Typescript type for me
 import "./globals.css"; // loads global CSS, similar to importing index.css in React. Without it, Tailwind/global styles won't work
 import Navbar from "@/components/navbar";
 import { AppProvider } from "./context/AppContext";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 // Metadata (SEO) - No need for react-helmet
 

@@ -21,7 +21,7 @@ import axios from "axios";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
-const blogCategories = [
+export const blogCategories = [
   "Technology",
   "Health",
   "Finance",
@@ -121,6 +121,77 @@ const AddBlog = () => {
     }
   };
 
+  const [AiTitle, setAiTitle] = useState(false) ;
+
+  const aiTitleResponse = async () => {
+    try {
+      setAiTitle(true) ; 
+
+      const {data} = await axios.post(`${author_service}/api/v1/ai/title`, {
+        text: formData.title
+      }) ; 
+
+      setFormData({
+        ...formData, 
+        title: data 
+      })
+    } catch (error) {
+      toast.error("Problem while fetching from AI") ; 
+
+      console.log("AI title error: ", error)
+    } finally {
+      setAiTitle(false) ; 
+    }
+  }
+
+  const [AiDescription, setAiDescription] = useState(false) ;
+
+  const aiDescriptionResponse = async () => {
+    try {
+      setAiDescription(true) ; 
+
+      const {data} = await axios.post(`${author_service}/api/v1/ai/description`, {
+        title: formData.title,
+        description: formData.description
+      }) ; 
+
+      setFormData({
+        ...formData, 
+        description: data 
+      })
+    } catch (error) {
+      toast.error("Problem while fetching from AI") ; 
+
+      console.log("AI description error: ", error)
+    } finally {
+      setAiDescription(false) ; 
+    }
+  }
+
+  const [aiBlogLoading, setAiBlogLoading] = useState(false) ;
+
+  const aiBlogResponse = async () => {
+    try {
+      setAiBlogLoading(true) ; 
+
+      const {data} = await axios.post(`${author_service}/api/v1/ai/blog`, {
+        blog: formData.blogContent
+      }) ; 
+
+      setContent(data.html) ; 
+      setFormData({
+        ...formData, 
+        blogContent: data.html
+      })
+    } catch (error) {
+      toast.error("Problem while fetching from AxI") ; 
+
+      console.log("AI description error: ", error)
+    } finally {
+      setAiBlogLoading(false) ; 
+    }
+  }
+
   const config = useMemo(
     () => ({
       readOnly: false,
@@ -145,10 +216,13 @@ const AddBlog = () => {
                 onChange={handleInputChange}
                 placeholder="Enter Blog title"
                 required
+                className={AiTitle ? "animate-pulse placeholder:opacity-60": ""}
               />
-              <Button type="button">
-                <RefreshCw />
-              </Button>
+              {formData.title==="" ? "" : <Button type="button"
+              onClick={aiTitleResponse} disabled={AiTitle}
+              >
+                <RefreshCw className={AiTitle ? "animate-spin" : ""} />
+              </Button>}
             </div>
 
             {/* Description */}
@@ -161,10 +235,19 @@ const AddBlog = () => {
                 onChange={handleInputChange}
                 placeholder="Enter Blog description"
                 required
+                className={
+                  AiDescription ? "animate-pulse placeholder:opacity-60": ""
+                }
               />
-              <Button type="button">
-                <RefreshCw />
-              </Button>
+              {formData.title === "" ? (
+                ""
+              ): (<Button 
+                type="button"
+                onClick={aiDescriptionResponse}
+                disabled={AiDescription}
+              >
+                <RefreshCw className={AiDescription ? "animate-spin" : ""}  />
+              </Button>)}
             </div>
 
             <Label>Category</Label>
@@ -197,8 +280,14 @@ const AddBlog = () => {
                   Paste your blog or type here. You can use rich text
                   formatting. Please add image after improving your grammer.
                 </p>
-                <Button type="button" size={"sm"}>
-                  <RefreshCw size={16} />
+                <Button 
+                  type="button" 
+                  size={"sm"}
+                  onClick={aiBlogResponse}
+                  disabled={aiBlogLoading}
+                >
+                  <RefreshCw 
+                    size={16} className={aiBlogLoading ? "animate-spin": ""} />
                   <span className="ml-2">Fix Grammar</span>
                 </Button>
               </div>

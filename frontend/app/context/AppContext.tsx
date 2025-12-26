@@ -54,7 +54,12 @@ interface AppContextType {
   setUser: React.Dispatch<React.SetStateAction<User | null>> ; 
   setLoading: React.Dispatch<React.SetStateAction<boolean>> ; 
   setIsAuth: React.Dispatch<React.SetStateAction<boolean>> ; 
-  logoutUser: () => Promise<void>
+  logoutUser: () => Promise<void> ; 
+  blogs: Blog[] | null; 
+  blogLoading: boolean ; 
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>> ; 
+  searchQuery: string ; 
+  setCategory: React.Dispatch<React.SetStateAction<string>> ; 
 }
 
 // createContext: It creates a global data container. It's a shared memory box for the whole app. "undefined" so React can warn us if: we try to use context outside the provider
@@ -93,6 +98,25 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   }
 
+  const [blogLoading, setBlogLoading] = useState(true) ; 
+  const [blogs, setBlogs] = useState<Blog[] | null>(null)
+
+  const [category, setCategory] = useState("") ; 
+  const [searchQuery, setSearchQuery] = useState("")
+
+  async function fetchBlogs(){
+    setBlogLoading(true) ; 
+    try {
+      const {data} = await axios.get(`${blog_service}/api/v1/blog/all?searchQuery=${searchQuery}&category=${category}`)
+
+      setBlogs(data) ; 
+    } catch (error) {
+      console.log("Fetch blog error: ", error) ; 
+    } finally {
+      setLoading(false) ; 
+    }
+  }
+
   async function logoutUser(){
     Cookies.remove("token") ; 
     setUser(null) ; 
@@ -105,8 +129,25 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    fetchBlogs()
+  },[searchQuery, category])
+
   return (
-    <AppContext.Provider value={{user, isAuth, setIsAuth, loading, setLoading, setUser, logoutUser}}>
+    <AppContext.Provider value={{
+      user, 
+      isAuth, 
+      setIsAuth, 
+      loading, 
+      setLoading, 
+      setUser, 
+      logoutUser,
+      blogs,
+      blogLoading, 
+      setCategory, 
+      setSearchQuery, 
+      searchQuery
+    }}>
       <GoogleOAuthProvider clientId="402233367112-tu1gba50m5ff25hn6r7a4783a7cqrda3.apps.googleusercontent.com">
         {children}
         <Toaster />
