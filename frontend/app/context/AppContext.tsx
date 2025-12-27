@@ -60,6 +60,7 @@ interface AppContextType {
   setSearchQuery: React.Dispatch<React.SetStateAction<string>> ; 
   searchQuery: string ; 
   setCategory: React.Dispatch<React.SetStateAction<string>> ; 
+  fetchBlogs: () => Promise<void>
 }
 
 // createContext: It creates a global data container. It's a shared memory box for the whole app. "undefined" so React can warn us if: we try to use context outside the provider
@@ -146,7 +147,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       blogLoading, 
       setCategory, 
       setSearchQuery, 
-      searchQuery
+      searchQuery, 
+      fetchBlogs
     }}>
       <GoogleOAuthProvider clientId="402233367112-tu1gba50m5ff25hn6r7a4783a7cqrda3.apps.googleusercontent.com">
         {children}

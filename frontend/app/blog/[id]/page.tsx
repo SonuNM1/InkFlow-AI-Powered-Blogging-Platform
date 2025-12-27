@@ -3,15 +3,19 @@
 import { Blog, blog_service, useAppData, User } from "@/app/context/AppContext";
 import Loading from "@/components/loading";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Bookmark, Delete, Edit, Trash2Icon } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 const BlogPage = () => {
   const { isAuth, user } = useAppData();
   const { id } = useParams();
+
+  const router = useRouter() ; 
 
   const [blog, setBlog] = useState<Blog | null>(null);
   const [author, setAuthor] = useState<User | null>(null);
@@ -64,7 +68,7 @@ const BlogPage = () => {
             )}
             {blog.author === user?._id && (
               <>
-                <Button size={"sm"}>
+                <Button size={"sm"} onClick={() => router.push(`/blog/edit/${id}`)} >
                   <Edit />
                 </Button>
                 <Button 
@@ -77,7 +81,32 @@ const BlogPage = () => {
             )}
           </p>
         </CardHeader>
+        <CardContent>
+          <img src={blog.image} alt="" className="w-full h-64 object-cover rounded-lg mb-4"/>
+          <p className="text-lg text-gray-700 mb-4">
+            {blog.description}
+          </p>
+          <div className="prose max-w-none" dangerouslySetInnerHTML={{_html:blog.blogcontent}}/>
+        </CardContent>
       </Card>
+      {
+        isAuth && <Card>
+          <CardHeader>
+            <h3 className="text-xl font-semibold">
+              Leave a comment 
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <Label htmlFor="comment">
+              Your Comment 
+            </Label>
+            <Input id="comment" placeholder="Type your comment here" className="my-2"/>
+            <Button>
+              Post Comment 
+            </Button>
+          </CardContent>
+        </Card>
+      }
     </div>
   );
 };

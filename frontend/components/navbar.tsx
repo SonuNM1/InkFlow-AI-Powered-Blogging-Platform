@@ -23,13 +23,13 @@ const Navbar = () => {
       {/* Main navbar container */}
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="text-2xl font-bold text-gray-900">
+        <Link href="/blogs" className="text-2xl font-bold text-gray-900">
           InkFlow
         </Link>
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-6">
-          <Link href="/" className="hover:text-blue-600 transition">
+          <Link href="/blogs" className="hover:text-blue-600 transition">
             Home
           </Link>
 
