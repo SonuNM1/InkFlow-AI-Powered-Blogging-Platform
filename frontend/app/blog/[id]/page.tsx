@@ -1,25 +1,118 @@
 "use client";
 
-import { Blog, blog_service, useAppData, User } from "@/app/context/AppContext";
+import { author_service, Blog, blog_service, useAppData, User } from "@/app/context/AppContext";
 import Loading from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Bookmark, Delete, Edit, Trash2Icon } from "lucide-react";
+import {
+  Bookmark,
+  Delete,
+  Edit,
+  Trash2,
+  Trash2Icon,
+  User2,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import toast from "react-hot-toast";
+
+interface Comment {
+  id: string;
+  userid: string;
+  comment: string;
+  create_at: string;
+  username: string;
+}
 
 const BlogPage = () => {
-  const { isAuth, user } = useAppData();
+  const { isAuth, user, fetchBlogs } = useAppData();
   const { id } = useParams();
 
-  const router = useRouter() ; 
+  const router = useRouter();
 
   const [blog, setBlog] = useState<Blog | null>(null);
   const [author, setAuthor] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [comment, setComment] = useState("");
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [saved, setSaved] = useState(false) ; 
+
+  async function fetchComment() {
+    try {
+      setLoading(true);
+
+      const { data } = await axios.get(`${blog_service}/api/v1/comment/${id}`);
+
+      setComments(data);
+    } catch (error) {
+      console.log("Fetch comment error: ", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchComment();
+  }, [id]);
+
+  async function addComment() {
+    try {
+      setLoading(true);
+
+      const token = Cookies.get("token");
+
+      const { data } = await axios.post(
+        `${blog_service}/api/v1/comment/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast.success(data.message);
+      setComment("");
+
+      fetchComment();
+    } catch (error) {
+      toast.error("Problem while adding comment");
+      console.log("Add comment error: ", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const deleteComment = async (id: string) => {
+    if (confirm("Are your sure you want to delete this comment?")) {
+      try {
+        setLoading(true);
+
+        const token = Cookies.get("token");
+
+        const { data } = await axios.delete(
+          `${blog_service}/api/v1/comment/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        toast.success(data.message);
+
+        fetchComment();
+      } catch (error) {
+        toast.error("Problem while deleting comment");
+        console.log("Delete comment error: ", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
 
   async function fetchSingleBlog() {
     try {
@@ -36,9 +129,67 @@ const BlogPage = () => {
     }
   }
 
+  async function deleteBlog() {
+    if (confirm("Are your sure you want to delete this blog?")) {
+      try {
+        setLoading(true);
+
+        const token = Cookies.get("token");
+
+        const { data } = await axios.delete(
+          `${author_service}/api/v1/blog/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        toast.success(data.message);
+
+        router.push("/blogs")  ;
+        
+        setTimeout(() => {
+          fetchBlogs()
+        }, 4000);
+      } catch (error) {
+        toast.error("Problem while deleting blog");
+        console.log("Delete blog error: ", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  }  
+
   useEffect(() => {
     fetchSingleBlog();
   }, [id]);
+
+  async function saveBlog(){
+    const token = Cookies.get("token") ; 
+
+    try {
+      setLoading(true) ; 
+
+      const {data} = await axios.post(
+        `${blog_service}/api/v1/save/${id}`, 
+        {}, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+
+      toast.success(data.message) ; 
+    } catch (error) {
+      toast.error("Problem while saving blog.") ; 
+
+      console.log("Save blog error:", error) ; 
+    } finally {
+      setLoading(false) ; 
+    }
+  }
 
   if (!blog) {
     return <Loading />;
@@ -62,19 +213,27 @@ const BlogPage = () => {
               {author?.name}
             </Link>
             {isAuth && (
-              <Button variant={"ghost"} className="mx-3" size={"lg"}>
+              <Button 
+                variant={"ghost"} className="mx-3" size={"lg"}
+                disabled={loading} 
+                onClick={saveBlog}
+              >
                 <Bookmark />
               </Button>
             )}
             {blog.author === user?._id && (
               <>
-                <Button size={"sm"} onClick={() => router.push(`/blog/edit/${id}`)} >
+                <Button
+                  size={"sm"}
+                  onClick={() => router.push(`/blog/edit/${id}`)}
+                >
                   <Edit />
                 </Button>
                 <Button 
-                variant={"destructive"}
-                className="mx-2"
-                size={"sm"}>
+                  variant={"destructive"} className="mx-2" size={"sm"}
+                  onClick={deleteBlog}
+                  disabled={loading}
+                >
                   <Trash2Icon />
                 </Button>
               </>
@@ -82,31 +241,76 @@ const BlogPage = () => {
           </p>
         </CardHeader>
         <CardContent>
-          <img src={blog.image} alt="" className="w-full h-64 object-cover rounded-lg mb-4"/>
-          <p className="text-lg text-gray-700 mb-4">
-            {blog.description}
-          </p>
-          <div className="prose max-w-none" dangerouslySetInnerHTML={{_html:blog.blogcontent}}/>
+          <img
+            src={blog.image}
+            alt=""
+            className="w-full h-64 object-cover rounded-lg mb-4"
+          />
+          <p className="text-lg text-gray-700 mb-4">{blog.description}</p>
+          <div
+            className="prose max-w-none"
+            dangerouslySetInnerHTML={{ _html: blog.blogcontent }}
+          />
         </CardContent>
       </Card>
-      {
-        isAuth && <Card>
+      {isAuth && (
+        <Card>
           <CardHeader>
-            <h3 className="text-xl font-semibold">
-              Leave a comment 
-            </h3>
+            <h3 className="text-xl font-semibold">Leave a comment</h3>
           </CardHeader>
           <CardContent>
-            <Label htmlFor="comment">
-              Your Comment 
-            </Label>
-            <Input id="comment" placeholder="Type your comment here" className="my-2"/>
-            <Button>
-              Post Comment 
+            <Label htmlFor="comment">Your Comment</Label>
+            <Input
+              id="comment"
+              placeholder="Type your comment here"
+              className="my-2"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            <Button onClick={addComment} disabled={loading}>
+              {loading ? "Adding Comment" : "Post Comment"}
             </Button>
           </CardContent>
         </Card>
-      }
+      )}
+      <Card>
+        <CardHeader>
+          <h3 className="text-lg font-medium">All Comments</h3>
+        </CardHeader>
+        <CardContent>
+          {comments && comments.length > 0 ? (
+            comments.map((e, i) => {
+              return (
+                <div key={i} className="border-b py-2 flex items-center gap-3">
+                  <div>
+                    <p className="font-semibold flex items-center gap-1">
+                      <span className="user border border-gray-400 rounded-full p-1">
+                        <User2 />
+                      </span>
+                      {e.username}
+                    </p>
+                    <p>{e.comment}</p>
+                    <p className="text-xs text-gray-50">
+                      {new Date(e.create_at).toLocaleString()}
+                    </p>
+                  </div>
+                  {e.userid === user?._id && (
+                    <Button
+                      onClick={() => deleteComment(e.id)}
+                      variant={"destructive"}
+                      disabled={loading}
+                    >
+                      <Trash2 />
+                    </Button>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <p>No comments yet.</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

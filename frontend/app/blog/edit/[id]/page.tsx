@@ -141,9 +141,6 @@ const EditBlogPage = () => {
       );
 
       toast.success(data.message);
-
-      router.push(`/blog/${id}`);
-
       fetchBlogs();
 
       localStorage.removeItem("blogDraft");
