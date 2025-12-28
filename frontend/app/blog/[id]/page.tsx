@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Bookmark,
-  Delete,
+  BookmarkCheck,
   Edit,
   Trash2,
   Trash2Icon,
@@ -29,7 +29,7 @@ interface Comment {
 }
 
 const BlogPage = () => {
-  const { isAuth, user, fetchBlogs } = useAppData();
+  const { isAuth, user, fetchBlogs, savedBlogs, getSavedBlogs } = useAppData();
   const { id } = useParams();
 
   const router = useRouter();
@@ -165,6 +165,14 @@ const BlogPage = () => {
     fetchSingleBlog();
   }, [id]);
 
+  useEffect(() =>{
+    if(savedBlogs && savedBlogs.some((b) => b.blogid === id)){
+      setSaved(true) ; 
+    } else {
+      setSaved(false) ; 
+    }
+  }, [savedBlogs, id])
+
   async function saveBlog(){
     const token = Cookies.get("token") ; 
 
@@ -182,6 +190,9 @@ const BlogPage = () => {
       )
 
       toast.success(data.message) ; 
+      setSaved(!saved) ; 
+
+      getSavedBlogs() ; 
     } catch (error) {
       toast.error("Problem while saving blog.") ; 
 
@@ -218,7 +229,9 @@ const BlogPage = () => {
                 disabled={loading} 
                 onClick={saveBlog}
               >
-                <Bookmark />
+                {
+                  saved ? <BookmarkCheck/> : <Bookmark/>
+                }
               </Button>
             )}
             {blog.author === user?._id && (

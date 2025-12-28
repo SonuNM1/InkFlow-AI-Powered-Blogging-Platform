@@ -170,8 +170,14 @@ export const savedBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
         await sql `DELETE FROM savedblogs WHERE userid=${userid} AND blogid=${blogid}` ; 
 
         res.json({
-            message: "Blog saved"
+            message: "Blog Unsaved"
         })
         return ; 
     }
+})
+
+export const getSavedBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
+    const blogs = await sql `SELECT * FROM savedblogs WHERE userid = ${req.user?._id}` ; 
+
+    res.json(blogs)
 })
