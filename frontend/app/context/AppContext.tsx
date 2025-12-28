@@ -10,6 +10,7 @@ import {
 import Cookies from "js-cookie";
 import toast, { Toaster } from "react-hot-toast";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import axios from "axios";
 
 // Creating a global store (Context) so any component in our app can access logged-in user data without passing props again and again.
 
@@ -124,7 +125,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     } catch (error) {
       console.log("Fetch blog error: ", error) ; 
     } finally {
-      setLoading(false) ; 
+      setBlogLoading(false) ; 
     }
   }
 
@@ -133,6 +134,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   async function getSavedBlogs(){
 
     const token = Cookies.get("token") ; 
+
+    if(!token) return ; 
 
     try {
       const {data} = await axios.get(

@@ -1,49 +1,72 @@
-import Link from 'next/link'
-import React from 'react'
-import { Card } from './ui/card'
-import { Calendar } from 'lucide-react'
-import moment from 'moment'
+import Link from "next/link";
+import React from "react";
+import { Card } from "./ui/card";
 
-interface BlogCardProps{
-    image: string, 
-    title: string, 
-    desc: string, 
-    id: string, 
-    time: string 
+interface BlogCardProps {
+  image: string;
+  title: string;
+  desc: string;
+  id: string;
+  category: string;
 }
 
 const BlogCard: React.FC<BlogCardProps> = ({
-    image, 
-    title, 
-    desc, 
-    id, 
-    time 
+  image,
+  title,
+  id,
+  category,
 }) => {
   return (
-    <Link href={`/blog/${id}`}>
-      <Card className='overflow-hidden rounded-lg shadow-none transition-shadow duration-300 hover:shadow-xl border-none'>
-        <div className='w-full h=[200px]'>      
-            <img src={image} alt={title} className='w-full h-full object-cover'/>
+    <Link href={`/blog/${id}`} className="block">
+      <Card
+        className="
+          relative
+          h-[260px]
+          overflow-hidden
+          rounded-xl
+          border
+          bg-white
+          transition-all
+          hover:shadow-lg
+        "
+      >
+        {/* IMAGE */}
+        <div className="h-[150px] w-full overflow-hidden">
+          <img
+            src={image}
+            alt={title}
+            className="h-full w-full object-cover"
+          />
         </div>
-        <div className='p-0'>
-            <div>
-                <p className='flex items-center justify-center gap-2 text-sm text-gray-500'>
-                    <Calendar size={16}/>
-                    <span>
-                        {moment(time).format("DD-MM-YYYY")}
-                    </span>
-                </p>
-                <h2 className='text-lg font-semibold mt-1 line-clamp-1 text-center'>
-                    [title]
-                </h2>
-                <p className='text-center'>
-                    {desc.slice(0, 30)}...
-                </p>
-            </div>
+
+        {/* CONTENT */}
+        <div className="px-4 pt-3">
+          <h2 className="text-sm font-semibold line-clamp-1">
+            {title}
+          </h2>
+
         </div>
+
+        {/* CATEGORY — FIXED AT CARD BOTTOM */}
+        <span
+          className="
+            absolute
+            bottom-3
+            right-3
+            text-[10px]
+            px-2
+            py-[2px]
+            rounded-full
+            bg-gray-100
+            text-gray-700
+            font-medium
+          "
+        >
+          {category}
+        </span>
       </Card>
     </Link>
-  )
-}
+  );
+};
 
-export default BlogCard
+export default BlogCard;

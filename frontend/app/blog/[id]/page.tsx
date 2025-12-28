@@ -19,6 +19,7 @@ import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
+import axios from "axios";
 
 interface Comment {
   id: string;

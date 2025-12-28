@@ -39,9 +39,12 @@ const Blogs = () => {
                 blogs && blogs.map((e, i) => {
                   return <BlogCard 
                     key={i} 
-                    image={e.image} title={e.title} desc={e.description} 
+                    image={e.image} 
+                    title={e.title} 
+                    desc={e.description} 
                     id={e.id} 
                     time={e.created_at}
+                    category={e.category}
                     />
                 })
               }
