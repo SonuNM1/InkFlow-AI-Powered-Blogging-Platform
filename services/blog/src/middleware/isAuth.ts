@@ -5,7 +5,11 @@ import jwt from "jsonwebtoken";
 // This interface extends Express Request. So we can attach user info extracted from JWT
 
 export interface AuthenticatedRequest extends Request {
-  userId?: string;
+  user?: {
+    userId: string ; 
+    name: string ; 
+    image?: string 
+  }
 }
 
 // JWT payload shape - this must attach what user service signs
@@ -41,8 +45,8 @@ export const isAuth = (
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as string
-    ) as JwtUserPayload;
+      process.env.JWT_SECRET!
+    ) as any;
 
     // validate payload
 
@@ -55,7 +59,14 @@ export const isAuth = (
 
     // attach ONLY userId to request
 
-    req.userId = decoded.userId;
+    // req.userId = decoded.userId;
+
+    req.user = {
+      userId: decoded.userId, 
+      name: decoded.name, 
+      image: decoded.image 
+    }
+    
     next();
   } catch (error) {
     console.log(chalk.red.bold("Auth error-author:", error));

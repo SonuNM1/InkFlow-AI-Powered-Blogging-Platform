@@ -23,7 +23,12 @@ export const isAuth = (req, res, next) => {
             });
         }
         // attach ONLY userId to request
-        req.userId = decoded.userId;
+        // req.userId = decoded.userId;
+        req.user = {
+            userId: decoded.userId,
+            name: decoded.name,
+            image: decoded.image
+        };
         next();
     }
     catch (error) {

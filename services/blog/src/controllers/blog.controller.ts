@@ -5,179 +5,187 @@ import TryCatch from "../utils/TryCatch.js";
 import axios from "axios";
 
 export const getAllBlogs = TryCatch(async (req, res) => {
+  const { searchQuery = "", category = "" } = req.query;
 
-    const {searchQuery ="", category=""} = req.query ; 
+  const cacheKey = `blogs:${searchQuery}:${category}`;
 
-    const cacheKey = `blogs:${searchQuery}:${category}` ; 
+  const cached = await redisClient.get(cacheKey);
 
-    const cached = await redisClient.get(cacheKey) ; 
+  if (cached) {
+    console.log("Serving from Redis cache");
 
-    if(cached){
-        console.log("Serving from Redis cache") ; 
+    return res.json(JSON.parse(cached));
+  }
 
-        return res.json(JSON.parse(cached))
-    }
+  let blogs;
 
-    let blogs ; 
-
-    if(searchQuery && category){
-        blogs = await sql `
-        SELECT * FROM blogs WHERE (title ILIKE ${"%" + searchQuery + "%"} OR description ILIKE ${"%" + searchQuery + "%"}) AND category=${category} ORDER BY create_at DESC
-    ` ;
-    } else if(searchQuery){
-        blogs = await sql `
-        SELECT * FROM blogs WHERE (title ILIKE ${"%" + searchQuery + "%"} OR description ILIKE ${"%" + searchQuery + "%"}) ORDER BY create_at DESC
-    ` ;
-    } else if(category){
-        blogs = await sql `
+  if (searchQuery && category) {
+    blogs = await sql`
+        SELECT * FROM blogs WHERE (title ILIKE ${
+          "%" + searchQuery + "%"
+        } OR description ILIKE ${
+      "%" + searchQuery + "%"
+    }) AND category=${category} ORDER BY create_at DESC
+    `;
+  } else if (searchQuery) {
+    blogs = await sql`
+        SELECT * FROM blogs WHERE (title ILIKE ${
+          "%" + searchQuery + "%"
+        } OR description ILIKE ${
+      "%" + searchQuery + "%"
+    }) ORDER BY create_at DESC
+    `;
+  } else if (category) {
+    blogs = await sql`
         SELECT * FROM blogs WHERE category=${category} ORDER BY create_at DESC
-    ` ;
-    }
-    else {
-        blogs = await sql `
+    `;
+  } else {
+    blogs = await sql`
         SELECT * FROM blogs ORDER BY create_at DESC
-    `
-    }
+    `;
+  }
 
-    console.log("Serving from DB") ;
-    
-    await redisClient.set(
-        cacheKey, 
-        JSON.stringify(blogs), 
-        {EX: 3600}
-    )
+  console.log("Serving from DB");
 
-    res.json(blogs)
-})
+  await redisClient.set(cacheKey, JSON.stringify(blogs), { EX: 3600 });
+
+  res.json(blogs);
+});
 
 export const getSingleBlog = TryCatch(async (req, res) => {
+  const blogId = req.params.id;
+  const cacheKey = `blog:${blogId}`;
+  const cached = await redisClient.get(cacheKey);
 
-    const blogId = req.params.id ; 
-    const cacheKey = `blog:${blogId}` ; 
-    const cached = await redisClient.get(cacheKey) ; 
+  if (cached) {
+    console.log("Serving single blog from Redis cache");
 
-    if(cached){
-        console.log("Serving single blog from Redis cache") ; 
+    return res.json(JSON.parse(cached));
+  }
 
-        return res.json(JSON.parse(cached))
-    }
+  // Fetch blog from PostgreSQL
 
-    // Fetch blog from PostgreSQL 
-
-    const blog = await sql `
+  const blog = await sql`
         SELECT * FROM blogs WHERE id=${blogId}
-    `
+    `;
 
-    if(blog.length === 0){
-        return res.status(404).json({
-            message: "No blog with this id"
-        })
-    }
+  if (blog.length === 0) {
+    return res.status(404).json({
+      message: "No blog with this id",
+    });
+  }
 
-    // Blog not found - 404 
+  // Blog not found - 404
 
-    if(!blog.length){
-        return res.status(404).json({
-            message: "Blog not found"
-        })
-    }
+  if (!blog.length) {
+    return res.status(404).json({
+      message: "Blog not found",
+    });
+  }
 
-    // Call USER SERVICE to get author info
+  // Call USER SERVICE to get author info
 
-    const {data} = await axios.get(`${process.env.USER_SERVICE}/api/v1/user/${blog[0]?.author}`) ; 
+  const { data } = await axios.get(
+    `${process.env.USER_SERVICE}/api/v1/user/${blog[0]?.author}`
+  );
 
-    const responseData = {
-        blog: blog[0], 
-        author: data
-    }
+  const responseData = {
+    blog: blog[0],
+    author: data,
+  };
 
-    await redisClient.set(
-        cacheKey, 
-        JSON.stringify(responseData),
-        {
-            EX: 3600
-        }
-    )
+  await redisClient.set(cacheKey, JSON.stringify(responseData), {
+    EX: 3600,
+  });
 
-    // Send combined response 
+  // Send combined response
 
-    res.json(responseData) ; 
-})
+  res.json(responseData);
+});
 
-export const addComment = TryCatch(async (req:AuthenticatedRequest, res) => {
+export const addComment = TryCatch(async (req: AuthenticatedRequest, res) => {
+  const { id: blogid } = req.params;
+  const { comment } = req.body;
 
-    const {id: blogid} = req.params ; 
-    const {comment} = req.body ; 
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
-    await sql `INSERT INTO comments (comment, blogid, userid, username) VALUES (${comment}, ${blogid}, ${req.user?._id}, ${req.user?.name}) RETURNING *` ; 
+  const {userId, name} = req.user ; 
 
-    res.json({
-        message: "Comment added"
-    })
+  await sql`
+    INSERT INTO comments (comment, blogid, userid, username)
+    VALUES (${comment}, ${blogid}, ${userId}, ${name}) RETURNING *
+  `;
 
-})
+  res.json({ message: "Comment added" });
+});
+
 
 export const getAllComment = TryCatch(async (req, res) => {
-    const {id} = req.params ; 
+  const { id } = req.params;
 
-    const comments = await sql `SELECT * FROM comments WHERE blogid=${id} ORDER BY create_at DESC` ; 
+  const comments =
+    await sql`SELECT * FROM comments WHERE blogid=${id} ORDER BY create_at DESC`;
 
-    res.json(comments) ; 
-})
+  res.json(comments);
+});
 
-export const deleteComment = TryCatch(async (req: AuthenticatedRequest, res) => {
-    const {commentId} = req.params ; 
-    
-    const comment = await sql `SELECT * FROM comments WHERE id=${commentId}`; 
+export const deleteComment = TryCatch(
+  async (req: AuthenticatedRequest, res) => {
+    const { commentId } = req.params;
 
-    if(comment[0].userId !== req.user?._id){
-        res.status(401).json({
-            message: "You are not owner of this comment"
-        })
-        return ; 
+    const comment = await sql`SELECT * FROM comments WHERE id=${commentId}`;
+
+    if (comment[0].userId !== req.user?._id) {
+      res.status(401).json({
+        message: "You are not owner of this comment",
+      });
+      return;
     }
 
-    await sql `DELETE FROM comments WHERE id = ${commentId}` ; 
+    await sql`DELETE FROM comments WHERE id = ${commentId}`;
 
     res.json({
-        message: "Comment deleted"
-    })
-
-})
+      message: "Comment deleted",
+    });
+  }
+);
 
 export const savedBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
+  const { blogid } = req.params;
+  const userid = req.user?._id;
 
-    const {blogid} = req.params ; 
-    const userid = req.user?._id ; 
+  if (!blogid || !userid) {
+    res.status(400).json({
+      message: "Missing blog id or user id",
+    });
+    return;
+  }
 
-    if(!blogid || !userid){
-        res.status(400).json({
-            message: "Missing blog id or user id"
-        })
-        return ; 
-    }
+  const existing =
+    await sql`SELECT * FROM savedblogs WHERE userid=${userid} AND blogid=${blogid}`;
 
-    const existing = await sql `SELECT * FROM savedblogs WHERE userid=${userid} AND blogid=${blogid}` ; 
+  if (existing.length === 0) {
+    await sql`INSERT INTO savedblogs (blogid, userid) VALUES (${blogid}, ${userid})`;
 
-    if(existing.length === 0){
-        await sql `INSERT INTO savedblogs (blogid, userid) VALUES (${blogid}, ${userid})` ; 
+    res.json({
+      message: "Blog saved",
+    });
+    return;
+  } else {
+    await sql`DELETE FROM savedblogs WHERE userid=${userid} AND blogid=${blogid}`;
 
-        res.json({
-            message: "Blog saved"
-        })
-        return ; 
-    } else {
-        await sql `DELETE FROM savedblogs WHERE userid=${userid} AND blogid=${blogid}` ; 
-
-        res.json({
-            message: "Blog Unsaved"
-        })
-        return ; 
-    }
-})
+    res.json({
+      message: "Blog Unsaved",
+    });
+    return;
+  }
+});
 
 export const getSavedBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
-    const blogs = await sql `SELECT * FROM savedblogs WHERE userid = ${req.user?._id}` ; 
+  const blogs =
+    await sql`SELECT * FROM savedblogs WHERE userid = ${req.user?._id}`;
 
-    res.json(blogs)
-})
+  res.json(blogs);
+});

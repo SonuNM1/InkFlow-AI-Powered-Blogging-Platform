@@ -43,40 +43,45 @@ export const getSingleBlog = TryCatch(async (req, res) => {
         console.log("Serving single blog from Redis cache");
         return res.json(JSON.parse(cached));
     }
-    // Fetch blog from PostgreSQL 
+    // Fetch blog from PostgreSQL
     const blog = await sql `
         SELECT * FROM blogs WHERE id=${blogId}
     `;
     if (blog.length === 0) {
         return res.status(404).json({
-            message: "No blog with this id"
+            message: "No blog with this id",
         });
     }
-    // Blog not found - 404 
+    // Blog not found - 404
     if (!blog.length) {
         return res.status(404).json({
-            message: "Blog not found"
+            message: "Blog not found",
         });
     }
     // Call USER SERVICE to get author info
     const { data } = await axios.get(`${process.env.USER_SERVICE}/api/v1/user/${blog[0]?.author}`);
     const responseData = {
         blog: blog[0],
-        author: data
+        author: data,
     };
     await redisClient.set(cacheKey, JSON.stringify(responseData), {
-        EX: 3600
+        EX: 3600,
     });
-    // Send combined response 
+    // Send combined response
     res.json(responseData);
 });
 export const addComment = TryCatch(async (req, res) => {
     const { id: blogid } = req.params;
     const { comment } = req.body;
-    await sql `INSERT INTO comments (comment, blogid, userid, username) VALUES (${comment}, ${blogid}, ${req.user?._id}, ${req.user?.name}) RETURNING *`;
-    res.json({
-        message: "Comment added"
-    });
+    if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { userId, name } = req.user;
+    await sql `
+    INSERT INTO comments (comment, blogid, userid, username)
+    VALUES (${comment}, ${blogid}, ${userId}, ${name}) RETURNING *
+  `;
+    res.json({ message: "Comment added" });
 });
 export const getAllComment = TryCatch(async (req, res) => {
     const { id } = req.params;
@@ -88,13 +93,13 @@ export const deleteComment = TryCatch(async (req, res) => {
     const comment = await sql `SELECT * FROM comments WHERE id=${commentId}`;
     if (comment[0].userId !== req.user?._id) {
         res.status(401).json({
-            message: "You are not owner of this comment"
+            message: "You are not owner of this comment",
         });
         return;
     }
     await sql `DELETE FROM comments WHERE id = ${commentId}`;
     res.json({
-        message: "Comment deleted"
+        message: "Comment deleted",
     });
 });
 export const savedBlog = TryCatch(async (req, res) => {
@@ -102,7 +107,7 @@ export const savedBlog = TryCatch(async (req, res) => {
     const userid = req.user?._id;
     if (!blogid || !userid) {
         res.status(400).json({
-            message: "Missing blog id or user id"
+            message: "Missing blog id or user id",
         });
         return;
     }
@@ -110,14 +115,14 @@ export const savedBlog = TryCatch(async (req, res) => {
     if (existing.length === 0) {
         await sql `INSERT INTO savedblogs (blogid, userid) VALUES (${blogid}, ${userid})`;
         res.json({
-            message: "Blog saved"
+            message: "Blog saved",
         });
         return;
     }
     else {
         await sql `DELETE FROM savedblogs WHERE userid=${userid} AND blogid=${blogid}`;
         res.json({
-            message: "Blog Unsaved"
+            message: "Blog Unsaved",
         });
         return;
     }

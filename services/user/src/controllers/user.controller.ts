@@ -42,7 +42,11 @@ export const loginUser = TryCatch(async (req, res) => {
   }
 
   const token = await jwt.sign(
-    { userId: user._id }, 
+    { 
+      userId: user._id, 
+      name: user.name, 
+      image: user.image 
+    }, 
     process.env.JWT_SECRET as string, 
     {
     expiresIn: "5d",
@@ -103,7 +107,11 @@ export const updateUser = TryCatch(async (req: AutheticatedRequest, res) => {
   ) 
   
   const token = jwt.sign(
-    {user}, 
+    {
+      userId: user._id,
+      name: user.name, 
+      image: user.image 
+    }, 
     process.env.JWT_SECRET as string, 
     {
       expiresIn: "5d"
@@ -151,7 +159,11 @@ export const updateProfilePic = TryCatch(async(req: AutheticatedRequest, res) =>
   ) ; 
 
   const token = jwt.sign(
-    {user}, 
+    {
+      userId: user._id,
+      name: user.name, 
+      image: user.image 
+    }, 
     process.env.JWT_SECRET as string, 
     {
       expiresIn: "5d"

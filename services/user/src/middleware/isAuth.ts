@@ -13,7 +13,9 @@ export interface AutheticatedRequest extends Request{
 // This is the exact shape of what we put inside JWT
 
 interface JwtUserPayload {
-    userId: string 
+    userId: string ; 
+    name: string ; 
+    image?: string ; 
 }
 
 /*
