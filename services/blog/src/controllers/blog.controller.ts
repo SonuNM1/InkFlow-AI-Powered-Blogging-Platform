@@ -107,7 +107,7 @@ export const addComment = TryCatch(async (req: AuthenticatedRequest, res) => {
   const { id: blogid } = req.params;
   const { comment } = req.body;
 
-  if (!req.user) {
+  if (!req.user?.userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
@@ -115,12 +115,11 @@ export const addComment = TryCatch(async (req: AuthenticatedRequest, res) => {
 
   await sql`
     INSERT INTO comments (comment, blogid, userid, username)
-    VALUES (${comment}, ${blogid}, ${userId}, ${name}) RETURNING *
+    VALUES (${comment}, ${blogid}, ${req.user.userId}, ${req.user.name}) RETURNING *
   `;
 
   res.json({ message: "Comment added" });
 });
-
 
 export const getAllComment = TryCatch(async (req, res) => {
   const { id } = req.params;
@@ -135,9 +134,29 @@ export const deleteComment = TryCatch(
   async (req: AuthenticatedRequest, res) => {
     const { commentId } = req.params;
 
-    const comment = await sql`SELECT * FROM comments WHERE id=${commentId}`;
+    // what backend received 
 
-    if (comment[0].userId !== req.user?._id) {
+    console.log("Deleting comment id: ", commentId) ; 
+    console.log("Auth user from JWT: ", req.user)
+
+    const comments = await sql`SELECT * FROM comments WHERE id=${commentId}`;
+
+    // what db returned 
+
+    console.log("comment from db: ", comments)
+
+    if(comments.length === 0){
+      return res.status(404).json({
+        message: "Comment not found"
+      })
+    }
+
+    const comment = comments[0] ; 
+
+    console.log("Comment owner userID: ", comment?.userid) ;
+    console.log("logged in user: ", req.user?.userId)
+
+    if (comment?.userid !== req.user?.userId) {
       res.status(401).json({
         message: "You are not owner of this comment",
       });
@@ -154,7 +173,7 @@ export const deleteComment = TryCatch(
 
 export const savedBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
   const { blogid } = req.params;
-  const userid = req.user?._id;
+  const userid = req.user?.userId;
 
   if (!blogid || !userid) {
     res.status(400).json({
@@ -185,7 +204,7 @@ export const savedBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
 
 export const getSavedBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
   const blogs =
-    await sql`SELECT * FROM savedblogs WHERE userid = ${req.user?._id}`;
+    await sql`SELECT * FROM savedblogs WHERE userid = ${req.user?.userId}`;
 
   res.json(blogs);
 });

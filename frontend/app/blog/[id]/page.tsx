@@ -177,6 +177,8 @@ const BlogPage = () => {
 
         const token = Cookies.get("token");
 
+        console.log("Deleting commentId from UI: ", id)
+
         const { data } = await axios.delete(
           `${blog_service}/api/v1/comments/${id}`,
           {

@@ -50,7 +50,6 @@ async function initDB() {
     await sql`
             CREATE TABLE IF NOT EXISTS savedBlogs(
                 id SERIAL PRIMARY KEY,
-                comment VARCHAR(255) NOT NULL, 
                 userid VARCHAR(255) NOT NULL,
                 blogId VARCHAR(255) NOT NULL,  
                 create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
