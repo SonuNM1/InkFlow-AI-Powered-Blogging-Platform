@@ -1,4 +1,4 @@
-import TryCatch from "../utils/TryCatch.js";
+import { TryCatch } from "../utils/TryCatch.js";
 import type { AuthenticatedRequest } from "../middlewares/isAuth.js";
 import getBuffer from "../utils/dataUri.js";
 import cloudinary from "cloudinary";
@@ -6,6 +6,7 @@ import { sql } from "../utils/db.js";
 import { invalidateCacheJob } from "../utils/RabbitMQ.js";
 import { GoogleGenAI } from "@google/genai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import openai from "../utils/openAi.js";
 
 export const createBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
   const { title, description, blogcontent, category } = req.body;
@@ -161,56 +162,61 @@ export const AITitleResponse = TryCatch(async (req, res) => {
 
   const { text } = req.body;
 
-  // Construct prompt for Gemini - We instruct AI: only correct grammar, no extra explanation, no formatting symbols
-
-  const prompt = `Correct the grammar of the following blog title and return only the corrected title without any additional text, formatting, or symbols: "${text}"`;
-
-  // Initialize Gemini AI client
-
-  const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY!,
-  });
-
-  // Call Gemini API. This sends our prompt to the model and waits for a response
-
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: prompt,
-  });
-
-  // safely extracting text from AI response
-
-  const rawText = response.text;
-
-  // Guard clause: if AI returned nothing, we stop execution and response immediately
-
-  if (!rawText) {
+  if (!text) {
     return res.status(400).json({
-      message: "AI did not return any text. Please try again!",
+      message: "Title is required",
     });
   }
 
-  // Clean response. Gemini sometimes returns markdown or symbols. We remove all unwanted formatting so DB/UI stays clean
+  // Feature flag (production safety)
 
-  const cleanedText = rawText
-    .replace(/\*\*/g, "") // remove **bold**
-    .replace(/\*/g, "") // remove *italic*
-    .replace(/_/g, "") // remove _underscores_
-    .replace(/`/g, "") // remove `code`
-    .replace(/~/g, "") // remove ~strike~
-    .replace(/\r?\n|\r/g, " ") // remove line breaks
-    .replace(/\s+/g, " ") // collapse multiple spaces
-    .trim();
+  if ((process.env.AI_ENABLED === "false")) {
+    return res.status(503).json({
+      message: "AI feature is currently disabled for cost saving.",
+    });
+  }
 
-  // Send cleaned title back to frontend
+  // OpenAI request
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a grammar correction engine. Return only the corrected title.",
+      },
+      {
+        role: "user",
+        content: text,
+      },
+    ],
+  });
+
+  const result = completion.choices[0]?.message?.content;
+
+  if (!result) {
+    throw new Error("AI did not return any text");
+  }
+
+  // light cleanup 
+
+  const cleaned = result.replace(/\s+/g, " ").trim() ; 
 
   res.status(200).json({
-    title: cleanedText,
+    title: cleaned,
   });
 });
 
 export const AIDescriptionResponse = TryCatch(async (req, res) => {
   const { title, description } = req.body; // extracting title and desc from req body
+
+  if (!title && !description) {
+    return res.status(400).json({
+      message: "Title or description required",
+    });
+  }
 
   // Build prompt conditionally. If description is empty -> generate a new one, else -> fix grammar only
 
@@ -221,114 +227,65 @@ export const AIDescriptionResponse = TryCatch(async (req, res) => {
   `
       : `Fix the grammar in the following blog description andn return only the corrected sentence. Do not add anything else: "${description}"`;
 
-  // Initialize Gemini client
-
-  const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY!,
-  });
-
-  // Call Gemini API
-
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: prompt,
-  });
-
-  // extract AI response
-
-  const rawText = response.text;
-
-  // Guard clause
-
-  if (!rawText) {
-    return res.status(400).json({
-      message: "AI did not return any text",
-    });
-  }
-
-  // Clean AI output
-
-  const cleanedText = rawText
-    .replace(/\*\*/g, "") // remove **bold**
-    .replace(/\*/g, "") // remove *italic*
-    .replace(/_/g, "") // remove _underscores_
-    .replace(/`/g, "") // remove `code`
-    .replace(/~/g, "") // remove ~strike~
-    .replace(/\r?\n|\r/g, " ") // remove line breaks
-    .replace(/\s+/g, " ") // collapse multiple spaces
-    .trim();
-
-  // send final response
-
-  res.status(200).json({
-    description: cleanedText,
-  });
-});
-
-export const AIBlogResponse = TryCatch(async (req, res) => {
-
-  // Instruction for AI: do not change HTML, only fix grammar, preserve tags and styles 
-
-  const prompt = `You will act as a grammar correction engine. I will provide you with blog content in rich HTML format (from Jodit Editor). Do not generate or rewrite the content with new ideas. Only correct grammatical, punctuation, and spelling errors while preserving all HTML tags and formatting. Maintain inline styles, image tags, line breaks, and structural tags exactly as they are. Return the full corrected HTML string as output.`;
-
-  const { blog } = req.body;  // extract blog HTML from request 
-
-  // guard clause 
-
-  if (!blog) {
-    return res.status(400).json({
-      message: "Please provide blog content",
-    });
-  }
-
-  const fullMessage = `${prompt}\n\n${blog}`; // combine instructions + blog HTML 
-
-  // Initializing Gemini model 
-
-  const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY! as string);
-
-  const model = ai.getGenerativeModel({
-    model: "gemini-1.5-pro",
-  });
-
-  // Call AI 
-
-  const result = await model.generateContent({
-    contents: [
+  const completion = await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    temperature: 0.3,
+    messages: [
       {
         role: "user",
-        parts: [
-          {
-            text: fullMessage,
-          },
-        ],
+        content: prompt,
       },
     ],
   });
 
-  // Extract AI response 
+  const result = completion.choices[0]?.message?.content;
 
-  const responseText = await result.response.text();
-
-  // Clean unwanted markdown wrappers 
-
-  const cleanedHtml = responseText
-    .replace(/^(html|```html|```)\n?/i, "")
-    .replace(/```$/i, "")
-    .replace(/\*\*/g, "") // remove **bold**
-    .replace(/\*/g, "") // remove *italic*
-    .replace(/_/g, "") // remove _underscores_
-    .replace(/`/g, "") // remove `code`
-    .replace(/~/g, "") // remove ~strike~
-    .replace(/\r?\n|\r/g, " ") // replace new lines with space
-    .replace(/\s+/g, " ") // collapse multiple spaces
-    .trim(); // remove leading/trailing spaces
-
-  // Send corrected HTML back 
+  if (!result) {
+    throw new Error("AI did not return any text");
+  }
 
   res.status(200).json({
-    html: cleanedHtml,
+    description: result.trim(),
   });
+});
+
+export const AIBlogResponse = TryCatch(async (req, res) => {
+  const { blog } = req.body;
+
+  if (!blog) {
+    return res.status(400).json({
+      message: "Blog content is required",
+    });
+  }
+
+  // Instruction for AI: do not change HTML, only fix grammar, preserve tags and styles
+
+  const prompt = `You will act as a grammar correction engine. I will provide you with blog content in rich HTML format (from Jodit Editor). Do not generate or rewrite the content with new ideas. Only correct grammatical, punctuation, and spelling errors while preserving all HTML tags and formatting. Maintain inline styles, image tags, line breaks, and structural tags exactly as they are. Return the full corrected HTML string as output.`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    temperature: 0,
+    messages: [
+      {
+        role: "system",
+        content: prompt,
+      },
+      {
+        role: "user", 
+        content: blog
+      }
+    ],
+  });
+
+  const result = completion.choices[0]?.message?.content ; 
+
+  if(!result){
+    throw new Error("AI did not return any response") ; 
+  }
+
+  res.status(200).json({
+    html: result.trim() 
+  })
 });
 
 /*

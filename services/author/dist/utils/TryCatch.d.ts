@@ -1,4 +1,3 @@
 import type { RequestHandler } from "express";
-declare const TryCatch: (handler: RequestHandler) => RequestHandler;
-export default TryCatch;
+export declare const TryCatch: (handler: RequestHandler) => RequestHandler;
 //# sourceMappingURL=TryCatch.d.ts.map

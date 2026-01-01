@@ -1031,3 +1031,61 @@ Next.js works in 2 phases:
 A hydration error happens when: HTML generated on the server ≠ HTML generated in the browser. 
 
     Server gives one value. Client gives another value. (Server HTML ≠ Client HTML) -> hydration error
+
+
+## Optimistic UI 
+
+- Without Optimistic UI 
+
+    1. User Clicks delete/save
+    2. UI freezes 
+    3. Loader shows 
+    4. Server responds 
+    5. UI updates 
+
+    Feels slow, broken, unprofessional 
+
+- With Optimistic UI 
+
+    1. User clicks action 
+    2. UI updates immediately 
+    3. Server request runs in background 
+    4. If success -> do nothing 
+    5. If failure -> rollback 
+
+    Feels instant, This is what Instagram, Twitter, LinkedIn do. 
+
+**Rollback:** undo optimistic change if API fails. 
+
+    Example - you remove comment from UI, Server fails, you restore previous comments 
+
+    This is why we: 
+
+        const prevComments = [...comments]
+
+    That snapshot lets us go back in time safely. 
+
+
+## How Rate Limits Work (AI)
+
+Rate limits are usually measured across 3 dimensions: 
+
+- Requests per minute (RPM)
+- Tokens per minute (TPM)
+- Requests per day (RPD)
+
+Your usage is evaluated against each limit, and exceeding any of them will trigger a rate limit error. 
+
+Rate limits are applied per project, not per API key. 
+
+Limits vary depending on the specific model being used, and some limits only apply to specific models. 
+
+
+## Streaming AI Response 
+
+
+## AI Cost Guard (max tokens per user) 
+
+## Feature flag to disable AI in production 
+
+## AI Usage Logging (DB)
