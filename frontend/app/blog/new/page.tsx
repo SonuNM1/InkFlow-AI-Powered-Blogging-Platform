@@ -171,8 +171,8 @@ const AddBlog = () => {
 
     // less than 200 words
 
-    if (wordCount < 200) {
-      toast.error("Blog must be at least 200 words");
+    if (wordCount < 50) {
+      toast.error("Blog must be at least 50 words");
       return;
     }
 
@@ -346,7 +346,7 @@ const AddBlog = () => {
     !formData.description ||
     !formData.category ||
     !imageFile ||
-    getWordCount(formData.blogContent) < 200;
+    getWordCount(formData.blogContent) < 50;
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -510,12 +510,12 @@ const AddBlog = () => {
                   value={content}
                   config={config}
                   tabIndex={1}
-                  onBlur={(newContent) => {
-                    setContent(newContent);
-                    setFormData({
-                      ...formData,
-                      blogContent: newContent,
-                    });
+                  onChange={(newContent) => {
+                    setContent(newContent) ; 
+                    setFormData((prev) => ({
+                      ...prev, 
+                      blogContent: newContent
+                    }))
                   }}
                 />
               </div>

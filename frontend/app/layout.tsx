@@ -3,6 +3,7 @@ import "./globals.css"; // loads global CSS, similar to importing index.css in R
 import Navbar from "@/components/navbar";
 import { AppProvider } from "./context/AppContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { ThemeProviderWrapper } from "./providers/theme-provider";
 
 // Metadata (SEO) - No need for react-helmet
 
@@ -19,12 +20,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <AppProvider>
-          <Navbar />
-          {children}
-        </AppProvider>
+        <ThemeProviderWrapper>
+          <AppProvider>
+            <Navbar />
+            {children}
+          </AppProvider>
+        </ThemeProviderWrapper>
       </body>
     </html>
   );

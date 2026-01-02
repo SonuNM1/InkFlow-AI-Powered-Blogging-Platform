@@ -116,10 +116,29 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [category, setCategory] = useState("") ; 
   const [searchQuery, setSearchQuery] = useState("")
 
+  // This will hold the debounced (delayed) search query 
+
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("") ; 
+
+  // Debounce search query to avoid API call on every keystroke 
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery) ; 
+    }, 300);  // wait 300ms after user stops typing 
+
+    // Cleanup timeout if user types again 
+
+    return () => {
+      clearTimeout(handler) ; 
+    }
+  },[searchQuery]) ; 
+
   async function fetchBlogs(){
+
     setBlogLoading(true) ; 
     try {
-      const {data} = await axios.get(`${blog_service}/api/v1/blog/all?searchQuery=${searchQuery}&category=${category}`)
+      const {data} = await axios.get(`${blog_service}/api/v1/blog/all?searchQuery=${debouncedSearchQuery}&category=${category}`)
 
       setBlogs(data) ; 
     } catch (error) {
@@ -167,7 +186,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   useEffect(() => {
     fetchBlogs()
-  },[searchQuery, category])
+  },[debouncedSearchQuery, category])
 
   return (
     <AppContext.Provider value={{

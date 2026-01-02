@@ -5,16 +5,24 @@ import TryCatch from "../utils/TryCatch.js";
 import axios from "axios";
 
 export const getAllBlogs = TryCatch(async (req, res) => {
-  const { searchQuery = "", category = "" } = req.query;
+  // const { searchQuery = "", category = "" } = req.query;
+  
+  const searchQuery = typeof req.query.searchQuery === "string" ? req.query.searchQuery : ""
+  
+  const category = typeof req.query.category === "string" ? req.query.category : "" ; 
 
-  const cacheKey = `blogs:${searchQuery}:${category}`;
+  const normalizedSearch = searchQuery.trim().toLowerCase() ; 
+  const shouldCache = normalizedSearch.length >= 2 || category ; 
 
-  const cached = await redisClient.get(cacheKey);
+  const cacheKey = `blogs:v1:${normalizedSearch || "all"}:${category || "all"}`;
 
-  if (cached) {
-    console.log("Serving from Redis cache");
+  if(shouldCache){
+    const cached = await redisClient.get(cacheKey) ; 
 
-    return res.json(JSON.parse(cached));
+    if(cached){
+      console.log("Serving from Redis cache") ; 
+      return res.json(JSON.parse(cached)) ; 
+    }
   }
 
   let blogs;
@@ -47,7 +55,15 @@ export const getAllBlogs = TryCatch(async (req, res) => {
 
   console.log("Serving from DB");
 
-  await redisClient.set(cacheKey, JSON.stringify(blogs), { EX: 3600 });
+  if(shouldCache){
+    await redisClient.set(
+      cacheKey, 
+      JSON.stringify(blogs), 
+      {
+        EX: 3600
+      }
+    )
+  }
 
   res.json(blogs);
 });

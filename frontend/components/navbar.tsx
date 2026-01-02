@@ -2,55 +2,58 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Menu, X, LogIn, CircleUserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogIn, CircleUserRoundIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppData } from "@/app/context/AppContext";
-
-/*
-  Navbar is a CLIENT COMPONENT because:
-  - It uses useState
-  - It handles click events
-*/
+import {motion, AnimatePresence} from "framer-motion"
+import { ThemeToggle } from "./theme-toggle";
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false); // mobile menu toggle
-
+  const [open, setOpen] = useState(false);
   const { loading, isAuth } = useAppData();
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b">
-      {/* Main navbar container */}
+    <header className="sticky top-0 z-50 bg-white/80 dark:bg-neutral-900/80 backdrop-blur border-b border-neutral-200 dark:border-neutral-500">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/blogs" className="text-2xl font-bold text-gray-900">
+        
+        {/* Brand */}
+        <Link
+          href="/blogs"
+          className="text-xl font-semibold dark:text-white text-gray-900"
+        >
           InkFlow
         </Link>
 
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-6">
-          <Link href="/blogs" className="hover:text-blue-600 transition">
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Link href="/blogs" className="hover:text-black transition">
             Home
           </Link>
-
-          <Link href="/blog/saved" className="hover:text-blue-600 transition">
+          <Link href="/blog/saved" className="hover:text-black transition">
             Saved
           </Link>
+        </nav>
 
-          {loading ? (
-            ""
-          ) : (
-            <li>
-              {isAuth ? (
-                <Link href={"/profile"} className="hover:text-blue-500">
-                  <CircleUserRoundIcon />
-                </Link>
-              ) : (
-                <Link href={"/login"} className="hover:text-blue-500">
-                  <LogIn />
-                </Link>
-              )}
-            </li>
+        {/* Desktop Auth */}
+        <div className="hidden md:flex items-center gap-2">
+
+          <ThemeToggle/>
+
+          {!loading && (
+            isAuth ? (
+              <Link href="/profile">
+                <Button variant="ghost" size="icon">
+                  <CircleUserRound className="w-5 h-5" />
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/login">
+                <Button variant="outline" size="sm">
+                  Login
+                </Button>
+              </Link>
+            )
           )}
         </div>
 
@@ -59,37 +62,54 @@ const Navbar = () => {
           variant="ghost"
           size="icon"
           className="md:hidden"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => setOpen(!open)}
         >
-          {isOpen ? <X /> : <Menu />}
+          {open ? <X /> : <Menu />}
         </Button>
       </div>
 
-      {/* Mobile Dropdown Menu */}
-      <div
-        className={cn(
-          "md:hidden overflow-hidden transition-all duration-300",
-          isOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
-        )}
-      >
-        <div className="flex flex-col items-center gap-4 py-4 bg-white border-t">
-          <Link href="/" onClick={() => setIsOpen(false)}>
-            Home
-          </Link>
+      {/* Mobile Menu */}
+      
+      <AnimatePresence>
+        {
+          open && (
+            <motion.div
+              initial={{opacity: 0, y: -8}}
+              animate={{opacity: 1, y: 0}}
+              exit={{opacity: 0, y: -8}}
+              transition={{duration: 0.2, ease: "easeOut"}}
+              className="md:hidden border-t bg-white dark:bg-neutral-900"
 
-          <Link href="/blog/saved" onClick={() => setIsOpen(false)}>
-            Saved
-          </Link>
+            >
+              <div className="flex flex-col gap-4 px-6 py-6 text-sm">
+                <Link href="/blogs" onClick={() => setOpen(false)}>
+                  Home 
+                </Link>
+                <Link href="/blog/saved" onClick={() => setOpen(false)}>
+                  Saved 
+                </Link>
+                {
+                  !loading && (
+                    isAuth ? (
+                      <Link href="/profile" onClick={() => setOpen(false)}>
+                        Profile 
+                      </Link>
+                    ) : (
+                      <Link href="/login" onClick={() => setOpen(false)}>
+                        <Button className="w-full">
+                          <LogIn className="w-4 h-4 mr-2"/>
+                        </Button>
+                      </Link>
+                    )
+                  )
+                }
+              </div>
+            </motion.div>
+          )
+        }
+      </AnimatePresence>
 
-          <Link href="/login" onClick={() => setIsOpen(false)}>
-            <Button className="w-40">
-              <LogIn className="w-4 h-4 mr-2" />
-              Login
-            </Button>
-          </Link>
-        </div>
-      </div>
-    </nav>
+    </header>
   );
 };
 

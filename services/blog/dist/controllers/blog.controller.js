@@ -3,12 +3,18 @@ import { redisClient } from "../utils/redis.js";
 import TryCatch from "../utils/TryCatch.js";
 import axios from "axios";
 export const getAllBlogs = TryCatch(async (req, res) => {
-    const { searchQuery = "", category = "" } = req.query;
-    const cacheKey = `blogs:${searchQuery}:${category}`;
-    const cached = await redisClient.get(cacheKey);
-    if (cached) {
-        console.log("Serving from Redis cache");
-        return res.json(JSON.parse(cached));
+    // const { searchQuery = "", category = "" } = req.query;
+    const searchQuery = typeof req.query.searchQuery === "string" ? req.query.searchQuery : "";
+    const category = typeof req.query.category === "string" ? req.query.category : "";
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const shouldCache = normalizedSearch.length >= 2 || category;
+    const cacheKey = `blogs:v1:${normalizedSearch || "all"}:${category || "all"}`;
+    if (shouldCache) {
+        const cached = await redisClient.get(cacheKey);
+        if (cached) {
+            console.log("Serving from Redis cache");
+            return res.json(JSON.parse(cached));
+        }
     }
     let blogs;
     if (searchQuery && category) {
@@ -32,7 +38,11 @@ export const getAllBlogs = TryCatch(async (req, res) => {
     `;
     }
     console.log("Serving from DB");
-    await redisClient.set(cacheKey, JSON.stringify(blogs), { EX: 3600 });
+    if (shouldCache) {
+        await redisClient.set(cacheKey, JSON.stringify(blogs), {
+            EX: 3600
+        });
+    }
     res.json(blogs);
 });
 export const getSingleBlog = TryCatch(async (req, res) => {

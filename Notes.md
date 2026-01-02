@@ -1089,3 +1089,5 @@ Limits vary depending on the specific model being used, and some limits only app
 ## Feature flag to disable AI in production 
 
 ## AI Usage Logging (DB)
+
+## Dark Theme across App
