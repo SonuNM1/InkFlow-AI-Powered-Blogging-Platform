@@ -2,8 +2,9 @@ import type { Metadata } from "next"; // this imports the Typescript type for me
 import "./globals.css"; // loads global CSS, similar to importing index.css in React. Without it, Tailwind/global styles won't work
 import Navbar from "@/components/navbar";
 import { AppProvider } from "./context/AppContext";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { ThemeProviderWrapper } from "./providers/theme-provider";
+import AIQuotaModal from "@/components/AIQuotaModal";
+import { AIProvider } from "./context/AIContext";
 
 // Metadata (SEO) - No need for react-helmet
 
@@ -23,10 +24,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProviderWrapper>
-          <AppProvider>
+          <AIProvider>
+            <AppProvider>
             <Navbar />
+            <AIQuotaModal/>
             {children}
           </AppProvider>
+          </AIProvider>
         </ThemeProviderWrapper>
       </body>
     </html>

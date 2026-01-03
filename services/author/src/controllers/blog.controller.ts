@@ -4,8 +4,6 @@ import getBuffer from "../utils/dataUri.js";
 import cloudinary from "cloudinary";
 import { sql } from "../utils/db.js";
 import { invalidateCacheJob } from "../utils/RabbitMQ.js";
-import { GoogleGenAI } from "@google/genai";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import openai from "../utils/openAi.js";
 
 export const createBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
@@ -157,6 +155,30 @@ export const deleteBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
   });
 });
 
+export const getMyBlogs = TryCatch(
+  async (req: AuthenticatedRequest, res) => {
+
+    // Safety check - auth middleware should already set this 
+
+    if(!req.user?.userId){
+      return res.status(401).json({
+        message: "Unauthorized. Kindly login to proceed!"
+      })
+    }
+
+    // Query only essential fields (fast + optimized for profile page)
+
+    const blogs = await sql `
+      SELECT id, title, description, image, category, create_at FROM blogs WHERE author = ${req.user.userId} ORDER BY create_at DESC
+    ` ; 
+
+    res.json({
+      count: blogs.length, 
+      blogs, 
+    })
+  }
+)
+
 export const AITitleResponse = TryCatch(async (req, res) => {
   // Extract input sent from frontend. Example: "this is my title"
 
@@ -170,7 +192,7 @@ export const AITitleResponse = TryCatch(async (req, res) => {
 
   // Feature flag (production safety)
 
-  if ((process.env.AI_ENABLED === "false")) {
+  if (process.env.AI_ENABLED === "false") {
     return res.status(503).json({
       message: "AI feature is currently disabled for cost saving.",
     });
@@ -200,9 +222,15 @@ export const AITitleResponse = TryCatch(async (req, res) => {
     throw new Error("AI did not return any text");
   }
 
-  // light cleanup 
+  // light cleanup
 
-  const cleaned = result.replace(/\s+/g, " ").trim() ; 
+  const cleaned = result.replace(/\s+/g, " ").trim();
+
+  // Log succcess
+
+  await sql`
+    INSERT INTO ai_usage (user_id, feature, status) VALUES (${req.user.userId}, 'TITLE', 'SUCCESS')
+  `;
 
   res.status(200).json({
     title: cleaned,
@@ -244,6 +272,11 @@ export const AIDescriptionResponse = TryCatch(async (req, res) => {
     throw new Error("AI did not return any text");
   }
 
+  await sql`
+  INSERT INTO ai_usage (user_id, feature, status)
+  VALUES (${req.user.userId}, 'DESCRIPTION', 'SUCCESS')
+`;
+
   res.status(200).json({
     description: result.trim(),
   });
@@ -271,21 +304,26 @@ export const AIBlogResponse = TryCatch(async (req, res) => {
         content: prompt,
       },
       {
-        role: "user", 
-        content: blog
-      }
+        role: "user",
+        content: blog,
+      },
     ],
   });
 
-  const result = completion.choices[0]?.message?.content ; 
+  const result = completion.choices[0]?.message?.content;
 
-  if(!result){
-    throw new Error("AI did not return any response") ; 
+  if (!result) {
+    throw new Error("AI did not return any response");
   }
 
+  await sql`
+  INSERT INTO ai_usage (user_id, feature, status)
+  VALUES (${req.user.userId}, 'BLOG', 'SUCCESS')
+`;
+
   res.status(200).json({
-    html: result.trim() 
-  })
+    html: result.trim(),
+  });
 });
 
 /*

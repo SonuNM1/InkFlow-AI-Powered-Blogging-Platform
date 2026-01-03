@@ -1091,3 +1091,7 @@ Limits vary depending on the specific model being used, and some limits only app
 ## AI Usage Logging (DB)
 
 ## Dark Theme across App
+
+## AI Usage Logging (DB Model)
+
+## Debounce - Frontend & Backend 

@@ -55,6 +55,16 @@ async function initDB() {
                 create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS ai_usage (
+          id SERIAL PRIMARY KEY, 
+          user_id VARCHAR(255) NOT NULL, 
+          feature VARCHAR(50) NOT NULL, 
+          status VARCHAR(20) NOT NULL, 
+          error_message TEXT, 
+          create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+        )
+      `
 
     console.log(chalk.yellow.bold("DB initialised successfully"));
   } catch (error) {

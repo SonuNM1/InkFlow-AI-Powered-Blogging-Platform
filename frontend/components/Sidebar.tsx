@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React from "react";
 import {
@@ -17,72 +17,92 @@ import { blogCategories } from "@/app/blog/new/page";
 import { useAppData } from "@/app/context/AppContext";
 
 const SideBar = () => {
-
-    const {
-      searchQuery, 
-      setSearchQuery, 
-      setCategory, 
-      category
-    } = useAppData() ; 
+  const {
+    searchQuery,
+    setSearchQuery,
+    setCategory,
+    category, // currently selected category
+  } = useAppData();
 
   return (
     <Sidebar>
       <SidebarHeader className="bg-white text-2xl font-bold mt-5">
         InkFlow
       </SidebarHeader>
+
       <SidebarContent className="bg-white">
         <SidebarGroup>
+
+          {/* SEARCH */}
           <SidebarGroupLabel>Search</SidebarGroupLabel>
-          <Input 
-            type="text" placeholder="Search your desired blog"
+          <Input
+            type="text"
+            placeholder="Search your desired blog"
             value={searchQuery}
-            onChange={e=> setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
+
+          {/* CATEGORIES */}
           <SidebarGroupLabel>Categories</SidebarGroupLabel>
+
           <SidebarMenu>
+
+            {/* ---------- ALL CATEGORY ---------- */}
+
             <SidebarMenuItem>
               <SidebarMenuButton
                 onClick={() => setCategory("")}
-                className={
-                  `flex items-center gap-2 ${category === "" ? "bg-gray-200 dark:bg-gray-700" : ""}`
-                }
+                className={`
+                    flex items-center gap-3 ${category === "" ? "bg-gray-200 dark:bg-gray-700 font-medium" : ""}
+                  `}
               >
-                
-                {/* Checkbox visual */}
 
-                <span className="w-4 h-4 border rounded flex items-center justify-center">
+                {/* Custom checkbox */}
+
+                <span
+                  className={`
+                      w-4 h-4 border rounded flex items-center justify-center text-xs font-bold ${category === "" ? "bg-black text-white border-black" : "border-gray-400"}
+                    `}
+                >
                   {
                     category === "" && "✓"
                   }
                 </span>
                 <span>
-                  All
+                  All 
                 </span>
-                <BoxSelect />
-                <span>All</span>
               </SidebarMenuButton>
-              {blogCategories?.map((e, i) => {
+            </SidebarMenuItem>
 
-                const isActive = category === e ; // check if this category is selected 
+            {/* ---------- DYNAMIC CATEGORIES ---------- */}
+            
+            {blogCategories.map((cat, i) => {
+              const isActive = category === cat;
 
-                return (
-                  <SidebarMenuButton    key={i}
-                   onClick={() => setCategory(e)}
-                   className={`
-                      flex items-center gap-2 transition-colors ${isActive ? "bg-gray-200 dark:bg-gray-700" : ""}
+              return (
+                <SidebarMenuItem key={i}>
+                  <SidebarMenuButton
+                    onClick={() => setCategory(cat)}
+                    className={`
+                      flex items-center gap-2 transition-colors
+                      ${isActive ? "bg-gray-200 dark:bg-gray-700" : ""}
                     `}
                   >
-                    <span className="w-4 h-4 border rounded flex items-center justify-center text-xs font-bold">
-                      {
-                        isActive && "✓"
-                      }
+                    {/* Checkbox */}
+                    <span
+                      className={`
+                          w-4 h-4 border rounded flex items-center justify-center text-xs font-bold ${isActive ? "bg-black text-white border-black" : "border-gray-400"}
+                        `}
+                    >
+                      {isActive && "✓"}
                     </span>
-                    <span>{e}</span>
+                    <span>{cat}</span>
                   </SidebarMenuButton>
-                );
-              })}
-            </SidebarMenuItem>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
+
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>

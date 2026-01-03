@@ -19,6 +19,8 @@ import { author_service, useAppData } from "@/app/context/AppContext";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { ButtonSkeleton } from "@/components/skeletons/ButtonSkeleton";
+import { handleAIClientError } from "@/lib/aiErrorHandler";
+import { aiDebounce } from "@/lib/debounce";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
@@ -250,30 +252,42 @@ const AddBlog = () => {
 
   const [AiTitle, setAiTitle] = useState(false);
 
-  const aiTitleResponse = async () => {
+  const aiTitleResponse = aiDebounce(async () => {
+
+    const token = Cookies.get("token") ; 
+
     if (formData.title && !confirmOverwrite("title")) return;
 
     try {
       setAiTitle(true);
 
-      const { data } = await axios.post(`${author_service}/api/v1/ai/title`, {
-        text: formData.title,
-      });
+      const { data } = await axios.post(
+        `${author_service}/api/v1/ai/title`, 
+        { text: formData.title }, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
 
       setFormData((prev) => ({
         ...prev, 
         title: data.title 
       }))
     } catch (error) {
-      toast.error("Problem while fetching from AI");
+      handleAIClientError(error) ; 
     } finally {
       setAiTitle(false);
     }
-  };
+  });
 
   const [AiDescription, setAiDescription] = useState(false);
 
-  const aiDescriptionResponse = async () => {
+  const aiDescriptionResponse = aiDebounce(async () => {
+
+    const token = Cookies.get("token") ; 
+
     if (formData.description && !confirmOverwrite("description")) return;
 
     try {
@@ -284,6 +298,11 @@ const AddBlog = () => {
         {
           title: formData.title,
           description: formData.description,
+        }, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
       );
 
@@ -292,22 +311,34 @@ const AddBlog = () => {
         description: data.description,
       });
     } catch (error) {
-      toast.error("Problem while fetching from AI");
-
-      console.log("AI description error: ", error);
+      handleAIClientError(error) ; 
     } finally {
       setAiDescription(false);
     }
-  };
+  })
 
   const [aiBlogLoading, setAiBlogLoading] = useState(false);
 
-  const aiBlogResponse = async () => {
+  const aiBlogResponse = aiDebounce(async () => {
+
+    const token = Cookies.get("token")
+
+    const plainText = getPlainText(formData.blogContent) ; 
+
+    if(!plainText){
+      toast.error("Please write some blog content before using AI.") ; 
+      return ; 
+    }
+
     try {
       setAiBlogLoading(true);
 
       const { data } = await axios.post(`${author_service}/api/v1/ai/blog`, {
         blog: formData.blogContent,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
 
       setContent(data.html);
@@ -316,13 +347,11 @@ const AddBlog = () => {
         blogContent: data.html,
       });
     } catch (error) {
-      toast.error("Problem while fetching from AxI");
-
-      console.log("AI description error: ", error);
+      handleAIClientError(error) ;
     } finally {
       setAiBlogLoading(false);
     }
-  };
+  })
 
   const config = useMemo(
     () => ({
@@ -347,6 +376,8 @@ const AddBlog = () => {
     !formData.category ||
     !imageFile ||
     getWordCount(formData.blogContent) < 50;
+
+  const isBlogEmpty = getPlainText(formData.blogContent).length === 0 ; 
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -381,7 +412,7 @@ const AddBlog = () => {
                   ✨
                 </span>
                 {
-                  AiTitle ? "Enhancing..." : "Enhance"
+                  AiTitle ? "AI Working..." : "AI Enhance"
                 }
               </Button>
             </div>
@@ -397,12 +428,14 @@ const AddBlog = () => {
                 placeholder="Enter blog description"
                 required
               />
+
               {/* AI Enhance button - matches title UX for consistency, prevents overwrite without confirmation */}
+              
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={!formData.description || AiDescription}
+                disabled={!formData.title || AiDescription}
                 onClick={aiDescriptionResponse}
                 title="Improve grammar and clarity using AI"
                 className="flex items-center gap-1"
@@ -411,7 +444,7 @@ const AddBlog = () => {
                   ✨
                 </span>
                 {
-                  AiDescription ? "Enhancing..." : "Enhance"
+                  AiDescription ? "AI Working..." : "AI Enhance"
                 }
               </Button>
             </div>
@@ -494,14 +527,19 @@ const AddBlog = () => {
                   type="button"
                   size={"sm"}
                   onClick={aiBlogResponse}
-                  disabled={aiBlogLoading}
+                  disabled={aiBlogLoading || isBlogEmpty}
+                  title="✨ AI-Powered Grammar Correction"
                   className="shrink-0"
                 >
                   <RefreshCw
                     size={16}
                     className={aiBlogLoading ? "animate-spin" : ""}
                   />
-                  <span className="ml-2">Fix Grammar</span>
+                  <span className="ml-2">
+                    {
+                      aiBlogLoading ? "AI Working..." : "✨ AI Magic"
+                    }
+                  </span>
                 </Button>
               </div>
               <div className="mt-3">
