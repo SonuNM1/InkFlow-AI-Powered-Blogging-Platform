@@ -5,16 +5,32 @@ import TryCatch from "../utils/TryCatch.js";
 import axios from "axios";
 
 export const getAllBlogs = TryCatch(async (req, res) => {
-  // const { searchQuery = "", category = "" } = req.query;
+
+  /*
+  Pagination params from query
+
+  page = current page number (default 1)
+  limit = blogs per page (default 16)
+  */
+
+  const page = Number(req.query.page) || 1; 
+  const limit = Number(req.query.limit) || 16; 
+
+  // OFFSET formula for SQL pagination 
+
+  const offset = (page - 1) * limit ; 
+
+  // existing filters 
   
   const searchQuery = typeof req.query.searchQuery === "string" ? req.query.searchQuery : ""
   
   const category = typeof req.query.category === "string" ? req.query.category : "" ; 
 
   const normalizedSearch = searchQuery.trim().toLowerCase() ; 
+
   const shouldCache = normalizedSearch.length >= 2 || category ; 
 
-  const cacheKey = `blogs:v1:${normalizedSearch || "all"}:${category || "all"}`;
+  const cacheKey = `blogs:v1:${normalizedSearch || "all"}:${category || "all"}:page:${page}:limit:${limit}`;
 
   if(shouldCache){
     const cached = await redisClient.get(cacheKey) ; 

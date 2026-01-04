@@ -70,7 +70,13 @@ interface AppContextType {
   setCategory: React.Dispatch<React.SetStateAction<string>> ; 
   fetchBlogs: () => Promise<void> ; 
   savedBlogs: SavedBlogType[] | null ; 
-  getSavedBlogs: () => Promise<void>
+  getSavedBlogs: () => Promise<void> ; 
+  pagination: {
+    totalCount: number ; 
+    totalPages: number ; 
+    currentPage: number ; 
+    limit: number ; 
+  } | null ; 
 }
 
 
@@ -90,6 +96,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null); // state inside context
   const [isAuth, setIsAuth] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Pagination state 
+
+  const [page, setPage] = useState(1) ; 
+  const [pagination, setPagination] = useState<any>(null) ; 
 
   async function fetchUser() {
     try {
@@ -138,9 +149,21 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     setBlogLoading(true) ; 
     try {
-      const {data} = await axios.get(`${blog_service}/api/v1/blog/all?searchQuery=${debouncedSearchQuery}&category=${category}`)
+      
+      const {data} = await axios.get(
+        `${blog_service}/api/v1/blogs/all`, 
+        {
+          params: {
+            searchQuery: debouncedSearchQuery,
+            category, 
+            page, // current page 
+            limit: 16   // blogs per page 
+          }
+        }
+      ) ; 
 
-      setBlogs(data) ; 
+      setBlogs(data.blogs) ; // blogs only 
+      setPagination(data.pagination) ; // pagination meta 
     } catch (error) {
       console.log("Fetch blog error: ", error) ; 
     } finally {
@@ -199,6 +222,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       logoutUser,
       blogs,
       blogLoading, 
+      pagination, 
+      page, 
+      setPage, 
       setCategory, 
       setSearchQuery, 
       searchQuery, 

@@ -78,7 +78,10 @@ const AddBlog = () => {
 
     if (saved) {
       const parsed = JSON.parse(saved);
-      setFormData(parsed);
+      setFormData((prev) => ({
+        ...prev, 
+        ...parsed 
+      }));
       setContent(parsed.blogContent || "");
     }
   }, []);
@@ -298,6 +301,7 @@ const AddBlog = () => {
         {
           title: formData.title,
           description: formData.description,
+          forceRegenerate: true 
         }, 
         {
           headers: {

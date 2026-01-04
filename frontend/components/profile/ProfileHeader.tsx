@@ -13,6 +13,7 @@ import ProfileEditModal from "./ProfileEditModal";
  * Clean profile section (no card).
  * Shows image, name, bio, socials, and actions.
  */
+
 const ProfileHeader = () => {
   const { user, logoutUser } = useAppData();
 
@@ -20,13 +21,18 @@ const ProfileHeader = () => {
   const [preview, setPreview] = useState<string | null>(null);
 
   // controls edit modal visibility
+
   const [openEdit, setOpenEdit] = useState(false);
 
   return (
     <div className="space-y-6">
+
       {/* IMAGE + BASIC INFO */}
+      
       <div className="flex items-center gap-6">
+        
         {/* Avatar */}
+        
         <div
           className="relative cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
@@ -40,10 +46,12 @@ const ProfileHeader = () => {
           </div>
 
           {/* hidden file input */}
+
           <input type="file" hidden ref={fileInputRef} />
         </div>
 
         {/* Name + Bio */}
+
         <div>
           <h2 className="text-2xl font-semibold">{user?.name}</h2>
           {user?.bio && (
@@ -54,7 +62,8 @@ const ProfileHeader = () => {
 
       {/* SOCIAL + Action row */}
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between md:flex-col md:items-start md:justify-start md:mt-12">
+
         {/* Social links (left) */}
 
         <div className="flex gap-4">
@@ -77,7 +86,7 @@ const ProfileHeader = () => {
 
         {/* Action Buttons - Right */}
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 md:mt-10">
             <Button
                 variant="outline"
                 onClick={() => setOpenEdit(true)}

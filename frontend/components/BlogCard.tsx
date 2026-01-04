@@ -40,8 +40,8 @@ const BlogCard: React.FC<BlogCardProps> = ({
         </div>
 
         {/* CONTENT */}
-        <div className="px-4 pt-3">
-          <h2 className="text-sm font-semibold line-clamp-1">
+        <div className="px-4 pb-4">
+          <h2 className="text-sm font-semibold leading-snug line-clamp-2">
             {title}
           </h2>
 

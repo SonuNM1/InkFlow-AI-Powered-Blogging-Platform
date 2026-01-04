@@ -52,7 +52,7 @@ const ProfilePage = () => {
   }, [user])
  
   return (
-    <div className='grid md:grid-cols-[35%_65%] gap-6 p-6'>
+    <div className='grid gap-6 p-4 md:grid-cols-[30%_70%] md:p-6'>
 
       {/* LEFT: profile info */}
 

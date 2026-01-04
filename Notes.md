@@ -1094,4 +1094,23 @@ Limits vary depending on the specific model being used, and some limits only app
 
 ## AI Usage Logging (DB Model)
 
-## Debounce - Frontend & Backend 
+## Debounce - Frontend & Backend
+
+## Blog Creation takes time 
+
+Current backend flow: 
+
+1. Convert image -> base64
+2. Upload image to Cloudinary (slowest)
+3. Insert blog into DB
+4. Invalidate cache
+5. Respond 
+
+Cloudinary uploads often take 3-5 seconds, especially with base64
+
+**Performance optimization** 
+
+1. Stop converting to base64, Upload stream instead 
+
+2. Move cache invalidation to background (non-blocking)
+

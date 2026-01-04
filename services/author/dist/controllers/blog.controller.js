@@ -181,14 +181,14 @@ export const AITitleResponse = TryCatch(async (req, res) => {
     });
 });
 export const AIDescriptionResponse = TryCatch(async (req, res) => {
-    const { title, description } = req.body; // extracting title and desc from req body
+    const { title, description, forceRegenerate } = req.body; // extracting title and desc from req body
     if (!title && !description) {
         return res.status(400).json({
             message: "Title or description required",
         });
     }
     // Build prompt conditionally. If description is empty -> generate a new one, else -> fix grammar only
-    const prompt = description === ""
+    const prompt = forceRegenerate || description === ""
         ? `
     Generate only one short blog description based on this title: "${title}". Your response must be only one sentence, strictly under 30 wordds, with no options, no greetings, and no extra text. Do not explain. Do not say 'here is'. Just return the description only.
   `
