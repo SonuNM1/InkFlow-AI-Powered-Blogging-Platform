@@ -14,19 +14,20 @@ const Navbar = () => {
   const { loading, isAuth } = useAppData();
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 dark:bg-neutral-900/80 backdrop-blur border-b border-neutral-200 dark:border-neutral-500">
+    <header className="sticky top-0 z-50 bg-background/80  backdrop-blur border-b border-border">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         
         {/* Brand */}
         <Link
           href="/blogs"
-          className="text-xl font-semibold dark:text-white text-gray-900"
+          className="text-xl font-semibold text-foreground"
         >
           InkFlow
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700 dark:text-gray-300">
+
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground hover:text-foreground transition">
           <Link href="/blogs" className="hover:text-black transition">
             Home
           </Link>
@@ -36,6 +37,7 @@ const Navbar = () => {
         </nav>
 
         {/* Desktop Auth */}
+
         <div className="hidden md:flex items-center gap-2">
 
           <ThemeToggle/>
@@ -58,6 +60,7 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Menu Button */}
+
         <Button
           variant="ghost"
           size="icon"
@@ -78,8 +81,7 @@ const Navbar = () => {
               animate={{opacity: 1, y: 0}}
               exit={{opacity: 0, y: -8}}
               transition={{duration: 0.2, ease: "easeOut"}}
-              className="md:hidden border-t bg-white dark:bg-neutral-900"
-
+              className="md:hidden border-t bg-background"
             >
               <div className="flex flex-col gap-4 px-6 py-6 text-sm">
                 <Link href="/blogs" onClick={() => setOpen(false)}>

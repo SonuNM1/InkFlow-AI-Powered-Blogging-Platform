@@ -26,11 +26,11 @@ const SideBar = () => {
 
   return (
     <Sidebar>
-      <SidebarHeader className="bg-white text-2xl font-bold mt-5">
+      <SidebarHeader className="bg-background text-2xl font-bold mt-5 text-foreground">
         InkFlow
       </SidebarHeader>
 
-      <SidebarContent className="bg-white">
+      <SidebarContent className="bg-background">
         <SidebarGroup>
 
           {/* SEARCH */}
@@ -53,7 +53,7 @@ const SideBar = () => {
               <SidebarMenuButton
                 onClick={() => setCategory("")}
                 className={`
-                    flex items-center gap-3 ${category === "" ? "bg-gray-200 dark:bg-gray-700 font-medium" : ""}
+                    flex items-center gap-3 ${category === "" ? "bg-muted font-medium" : ""}
                   `}
               >
 
@@ -61,7 +61,7 @@ const SideBar = () => {
 
                 <span
                   className={`
-                      w-4 h-4 border rounded flex items-center justify-center text-xs font-bold ${category === "" ? "bg-black text-white border-black" : "border-gray-400"}
+                      w-4 h-4 border rounded flex items-center justify-center text-xs font-bold ${category === "" ? "bg-primary text-primary-foreground border-primary" : "border-border"}
                     `}
                 >
                   {
@@ -85,13 +85,13 @@ const SideBar = () => {
                     onClick={() => setCategory(cat)}
                     className={`
                       flex items-center gap-2 transition-colors
-                      ${isActive ? "bg-gray-200 dark:bg-gray-700" : ""}
+                      ${isActive ? "bg-muted" : ""}
                     `}
                   >
                     {/* Checkbox */}
                     <span
                       className={`
-                          w-4 h-4 border rounded flex items-center justify-center text-xs font-bold ${isActive ? "bg-black text-white border-black" : "border-gray-400"}
+                          w-4 h-4 border rounded flex items-center justify-center text-xs font-bold ${isActive ? "bg-primary text-primary-foreground border-primary" : "border-border"}
                         `}
                     >
                       {isActive && "✓"}

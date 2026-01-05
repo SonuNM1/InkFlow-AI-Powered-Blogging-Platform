@@ -41,7 +41,7 @@ const ProfileHeader = () => {
             <AvatarImage src={preview || user?.image} />
           </Avatar>
 
-          <div className="absolute bottom-1 right-1 bg-black text-white p-1 rounded-full">
+          <div className="absolute bottom-1 right-1 bg-primary text-primary-foreground p-1 rounded-full">
             <Camera size={14} />
           </div>
 

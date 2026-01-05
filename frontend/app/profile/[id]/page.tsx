@@ -48,7 +48,7 @@ const UserProfilePage = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl flex-col items-center space-y-4">
               <Avatar
-                className="w-28 h-28 border-4 border-gray-200 shadow-md cursor-pointer"
+                className="w-28 h-28 border-4 border-border shadow-md cursor-pointer"
               >
                 <AvatarImage src={user?.image} alt="Profile image" />
               </Avatar>

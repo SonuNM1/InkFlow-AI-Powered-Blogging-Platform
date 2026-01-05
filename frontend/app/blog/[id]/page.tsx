@@ -266,7 +266,7 @@ const BlogPage = () => {
 
         {/* Author + Actions */}
 
-        <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
           <Link
             href={`/profile/${author?._id}`}
             className="flex items-center gap-2"
@@ -310,12 +310,12 @@ const BlogPage = () => {
 
       {/* Blog description */}
 
-      <p className="text-lg text-gray-700">{blog.description}</p>
+      <p className="text-lg text-foreground">{blog.description}</p>
 
       {/* Blog content */}
 
       <article
-        className="prose prose-lg max-w-none"
+        className="prose prose-lg dark:prose-invert max-w-none"
         dangerouslySetInnerHTML={{ __html: blog.blogcontent }}
       />
 
@@ -348,18 +348,19 @@ const BlogPage = () => {
 
         {comments.length > 0 ? (
           comments.map((c) => (
-            <div key={c.id} className="flex gap-4 border rounded-xl p-4">
+            <div key={c.id} className="flex gap-4 border border-border rounded-xl p-4">
+
               {/* Comment content */}
 
               <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <span className="font-medium text-gray-800">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">
                     {c.username || "User"}
                   </span>
                   <span>•</span>
                   <span>{new Date(c.create_at).toLocaleDateString()}</span>
                 </div>
-                <p className="text-gray-700">{c.comment}</p>
+                <p className="text-foreground">{c.comment}</p>
               </div>
 
               {/* comment delete button - only the comment owner can delete */}
@@ -376,7 +377,7 @@ const BlogPage = () => {
             </div>
           ))
         ) : (
-          <p className="text-gray-500">No comments yet.</p>
+          <p className="text-muted-foreground">No comments yet.</p>
         )}
       </section>
     </div>

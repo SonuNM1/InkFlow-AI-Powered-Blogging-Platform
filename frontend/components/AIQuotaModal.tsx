@@ -11,15 +11,15 @@ const AIQuotaModal = () => {
     if(!showQuotaModal) return null ; // don't render anything unless quota is exceeded 
 
   return (
-    <div className='fixed inset-0 z-50 bg-black/50 flex items-center justify-center'>
-      <div className='bg-white rounded-lg max-w-md w-full p-6 space-y-4 shadow-lg'>
+    <div className='fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center'>
+      <div className='bg-card text-card-foreground rounded-lg max-w-md w-full p-6 space-y-4 shadow-lg'>
         <h2 className='text-xl font-semibold'>
             AI Usage Limit Reached 
         </h2>
 
         {/* Clear explanation instead of vague error */}
 
-        <p className='text-sm text-gray-600'>
+        <p className='text-sm text-muted-foreground'>
             This AI feature uses <strong>real paid API</strong>. To control costs, usage is intentionally limited. 
         </p>
 
@@ -29,7 +29,7 @@ const AIQuotaModal = () => {
             If you'd like extended acccess for evaluation, feel free to contact me: 
         </p>
 
-        <div className='text-sm font-medium'>
+        <div className='text-sm font-medium text-foreground'>
            📧 isonumahto362000@gmail.com 
             📞 +91-7903648044
         </div>

@@ -59,26 +59,34 @@ interface AppContextType {
   user: User | null ;
   loading: boolean ; 
   isAuth: boolean ; 
+
   setUser: React.Dispatch<React.SetStateAction<User | null>> ; 
   setLoading: React.Dispatch<React.SetStateAction<boolean>> ; 
   setIsAuth: React.Dispatch<React.SetStateAction<boolean>> ; 
   logoutUser: () => Promise<void> ; 
-  blogs: Blog[] | null; 
+
+  blogs: Blog[] | null ; 
   blogLoading: boolean ; 
+
   setSearchQuery: React.Dispatch<React.SetStateAction<string>> ; 
   searchQuery: string ; 
+
   setCategory: React.Dispatch<React.SetStateAction<string>> ; 
+
   fetchBlogs: () => Promise<void> ; 
   savedBlogs: SavedBlogType[] | null ; 
   getSavedBlogs: () => Promise<void> ; 
+
   pagination: {
     totalCount: number ; 
     totalPages: number ; 
     currentPage: number ; 
     limit: number ; 
   } | null ; 
-}
 
+  page: number ; 
+  setPage: React.Dispatch<React.SetStateAction<number>> ;
+}
 
 // createContext: It creates a global data container. It's a shared memory box for the whole app. "undefined" so React can warn us if: we try to use context outside the provider
 
@@ -151,7 +159,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     try {
       
       const {data} = await axios.get(
-        `${blog_service}/api/v1/blogs/all`, 
+        `${blog_service}/api/v1/blog/all`, 
         {
           params: {
             searchQuery: debouncedSearchQuery,
@@ -207,9 +215,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getSavedBlogs() ; 
   }, []);
 
+  // reset page when filters change 
+
+  useEffect(() => {
+    setPage(1) ; 
+  }, [debouncedSearchQuery, category]) ;
+
   useEffect(() => {
     fetchBlogs()
-  },[debouncedSearchQuery, category])
+  },[debouncedSearchQuery, category, page])
 
   return (
     <AppContext.Provider value={{

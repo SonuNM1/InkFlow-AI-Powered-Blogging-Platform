@@ -373,6 +373,11 @@ const AddBlog = () => {
     return text.split(/\s+/).length;
   };
 
+  // word counter 
+
+  const wordCount = getWordCount(formData.blogContent) ;
+  const isWordCountInvalid = wordCount > 0 && wordCount < 50 ;  // wordCount > 0, don't scare user before typing 
+
   const isSubmitDisabled =
     loading ||
     !formData.title ||
@@ -483,7 +488,7 @@ const AddBlog = () => {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 className={`relative flex items-center justify-center border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition ${
-                  isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                  isDragging ? "border-primary bg-primary/10" : "border-border"
                 }`}
               >
                 {/* hidden input */}
@@ -511,7 +516,7 @@ const AddBlog = () => {
                     <button
                       type="button"
                       onClick={removeImage}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs"
                     >
                       X
                     </button>
@@ -560,6 +565,23 @@ const AddBlog = () => {
                     }))
                   }}
                 />
+
+                  {/* Word count + Validation feedback */}
+
+                  <div className="flex justify-between items-center text-sm">
+                    <span
+                      className={isWordCountInvalid ? "text-destructive font-medium" : "text-muted-foreground"}
+                    >
+                      {wordCount} / 50 words 
+                    </span>
+                    {
+                      isWordCountInvalid && (
+                        <span className="text-red-500">
+                          Blog content must be at least 50 words. 
+                        </span>
+                      )
+                    }
+                  </div>
               </div>
             </div>
             {loading ? (

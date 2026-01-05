@@ -2,58 +2,130 @@ import { sql } from "../utils/db.js";
 import { redisClient } from "../utils/redis.js";
 import TryCatch from "../utils/TryCatch.js";
 import axios from "axios";
+// export const getAllBlogs = TryCatch(async (req, res) => {
+//   /*
+//   Pagination params from query
+//   page = current page number (default 1)
+//   limit = blogs per page (default 16)
+//   */
+//   const page = Number(req.query.page) || 1;
+//   const limit = Number(req.query.limit) || 16;
+//   // OFFSET formula for SQL pagination
+//   const offset = (page - 1) * limit ;
+//   // existing filters
+//   const searchQuery = typeof req.query.searchQuery === "string" ? req.query.searchQuery : ""
+//   const category = typeof req.query.category === "string" ? req.query.category : "" ;
+//   const normalizedSearch = searchQuery.trim().toLowerCase() ;
+//   const shouldCache = normalizedSearch.length >= 2 || category ;
+//   const cacheKey = `blogs:v1:${normalizedSearch || "all"}:${category || "all"}:page:${page}:limit:${limit}`;
+//   if(shouldCache){
+//     const cached = await redisClient.get(cacheKey) ;
+//     if(cached){
+//       console.log("Serving from Redis cache") ;
+//       return res.json(JSON.parse(cached)) ;
+//     }
+//   }
+//   let blogs;
+//   if (searchQuery && category) {
+//     blogs = await sql`
+//         SELECT * FROM blogs WHERE (title ILIKE ${
+//           "%" + searchQuery + "%"
+//         } OR description ILIKE ${
+//       "%" + searchQuery + "%"
+//     }) AND category=${category} ORDER BY create_at DESC
+//     `;
+//   } else if (searchQuery) {
+//     blogs = await sql`
+//         SELECT * FROM blogs WHERE (title ILIKE ${
+//           "%" + searchQuery + "%"
+//         } OR description ILIKE ${
+//       "%" + searchQuery + "%"
+//     }) ORDER BY create_at DESC
+//     `;
+//   } else if (category) {
+//     blogs = await sql`
+//         SELECT * FROM blogs WHERE category=${category} ORDER BY create_at DESC
+//     `;
+//   } else {
+//     blogs = await sql`
+//         SELECT * FROM blogs ORDER BY create_at DESC
+//     `;
+//   }
+//   console.log("Serving from DB");
+//   if(shouldCache){
+//     await redisClient.set(
+//       cacheKey,
+//       JSON.stringify(blogs),
+//       {
+//         EX: 3600
+//       }
+//     )
+//   }
+//   res.json(blogs);
+// });
 export const getAllBlogs = TryCatch(async (req, res) => {
-    /*
-    Pagination params from query
-  
-    page = current page number (default 1)
-    limit = blogs per page (default 16)
-    */
+    // Pagination parameters (URL-synced): page -> current page number, limit -> no of blogs per page
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 16;
-    // OFFSET formula for SQL pagination 
+    // Offset calculation: page 1 -> offset 0, page 2 -> offset limit
     const offset = (page - 1) * limit;
-    // existing filters 
-    const searchQuery = typeof req.query.searchQuery === "string" ? req.query.searchQuery : "";
+    // Filter parameters
+    const searchQuery = typeof req.query.searchQuery === "string"
+        ? req.query.searchQuery.trim()
+        : "";
     const category = typeof req.query.category === "string" ? req.query.category : "";
-    const normalizedSearch = searchQuery.trim().toLowerCase();
-    const shouldCache = normalizedSearch.length >= 2 || category;
-    const cacheKey = `blogs:v1:${normalizedSearch || "all"}:${category || "all"}:page:${page}:limit:${limit}`;
-    if (shouldCache) {
-        const cached = await redisClient.get(cacheKey);
-        if (cached) {
-            console.log("Serving from Redis cache");
-            return res.json(JSON.parse(cached));
+    // Normalize search string for consistent caching
+    const normalizedSearch = searchQuery.toLowerCase();
+    // Redis cache key. Cache key includes: search, category, page, limit - this ensures each page is cached independently
+    const cacheKey = `blogs:v2:${normalizedSearch || "all"}:${category || "all"}:page:${page}:limit:${limit}`;
+    // attempt to serve from cache first
+    const cached = await redisClient.get(cacheKey);
+    if (cached) {
+        console.log("Serving from Redis cache");
+        return res.json(JSON.parse(cached));
+    }
+    // WHERE clause. This condition is resused for: fetching paginated blogs, fetching total blog count
+    const whereClause = sql `
+    WHERE
+      (
+        ${searchQuery
+        ? sql `
+            title ILIKE ${"%" + searchQuery + "%"}
+            OR description ILIKE ${"%" + searchQuery + "%"}
+          `
+        : sql `TRUE`}
+      )
+      AND
+      (
+        ${category ? sql `category = ${category}` : sql `TRUE`}
+      )
+  `;
+    // Fetch paginated blogs 
+    const blogs = await sql `
+        SELECT * FROM blogs ${whereClause} ORDER BY create_at DESC LIMIT ${limit} OFFSET ${offset}
+  `;
+    // Fetch total blog count. Used to calculate: total pages, pagination UI controls 
+    const countResult = await sql `
+        SELECT COUNT(*) FROM blogs ${whereClause}
+  `;
+    const totalCount = Number(countResult[0]?.count || 0);
+    const totalPages = Math.ceil(totalCount / limit);
+    // Final response shape 
+    const response = {
+        blogs,
+        pagination: {
+            totalCount,
+            totalPages,
+            currentPage: page,
+            limit
         }
-    }
-    let blogs;
-    if (searchQuery && category) {
-        blogs = await sql `
-        SELECT * FROM blogs WHERE (title ILIKE ${"%" + searchQuery + "%"} OR description ILIKE ${"%" + searchQuery + "%"}) AND category=${category} ORDER BY create_at DESC
-    `;
-    }
-    else if (searchQuery) {
-        blogs = await sql `
-        SELECT * FROM blogs WHERE (title ILIKE ${"%" + searchQuery + "%"} OR description ILIKE ${"%" + searchQuery + "%"}) ORDER BY create_at DESC
-    `;
-    }
-    else if (category) {
-        blogs = await sql `
-        SELECT * FROM blogs WHERE category=${category} ORDER BY create_at DESC
-    `;
-    }
-    else {
-        blogs = await sql `
-        SELECT * FROM blogs ORDER BY create_at DESC
-    `;
-    }
-    console.log("Serving from DB");
-    if (shouldCache) {
-        await redisClient.set(cacheKey, JSON.stringify(blogs), {
-            EX: 3600
-        });
-    }
-    res.json(blogs);
+    };
+    // Cache response - short TTL keeps content fresh 
+    await redisClient.set(cacheKey, JSON.stringify(response), {
+        EX: 300, // 5 minutes 
+    });
+    console.log("Serving blogs from DB");
+    res.json(response);
 });
 export const getSingleBlog = TryCatch(async (req, res) => {
     const blogId = req.params.id;
@@ -110,15 +182,15 @@ export const getAllComment = TryCatch(async (req, res) => {
 });
 export const deleteComment = TryCatch(async (req, res) => {
     const { commentId } = req.params;
-    // what backend received 
+    // what backend received
     console.log("Deleting comment id: ", commentId);
     console.log("Auth user from JWT: ", req.user);
     const comments = await sql `SELECT * FROM comments WHERE id=${commentId}`;
-    // what db returned 
+    // what db returned
     console.log("comment from db: ", comments);
     if (comments.length === 0) {
         return res.status(404).json({
-            message: "Comment not found"
+            message: "Comment not found",
         });
     }
     const comment = comments[0];

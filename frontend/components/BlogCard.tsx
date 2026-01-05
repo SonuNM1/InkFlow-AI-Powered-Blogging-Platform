@@ -25,12 +25,13 @@ const BlogCard: React.FC<BlogCardProps> = ({
           overflow-hidden
           rounded-xl
           border
-          bg-white
+          bg-card text-card-foreground
           transition-all
           hover:shadow-lg
         "
       >
         {/* IMAGE */}
+
         <div className="h-[150px] w-full overflow-hidden">
           <img
             src={image}
@@ -48,6 +49,7 @@ const BlogCard: React.FC<BlogCardProps> = ({
         </div>
 
         {/* CATEGORY — FIXED AT CARD BOTTOM */}
+
         <span
           className="
             absolute
@@ -57,8 +59,7 @@ const BlogCard: React.FC<BlogCardProps> = ({
             px-2
             py-[2px]
             rounded-full
-            bg-gray-100
-            text-gray-700
+            bg-muted text-muted-foreground
             font-medium
           "
         >
