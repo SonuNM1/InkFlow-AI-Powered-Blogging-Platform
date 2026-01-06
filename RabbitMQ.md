@@ -175,43 +175,164 @@ With this:
         keys: ["blogs:all"]
     })
 
+- Now: Blog Service does its job, It doesn't care who handles the message, If Redis service is down -> message waits. No blocking. No crashes.
 
-- Now: Blog Service does its job, It doesn't care who handles the message, If Redis service is down -> message waits. No blocking. No crashes. 
+## What RabbitMQ actually does
 
+RabbitMQ has:
 
-## What RabbitMQ actually does 
-
-RabbitMQ has: 
-
-1. Producer (Sender): Your Blog Service 
+1.  Producer (Sender): Your Blog Service
 
     publishToQueue("cache-invalidation", message)
 
-2. Queue
+2.  Queue
 
-    A mailbox called "cache-invalidation" 
+    A mailbox called "cache-invalidation"
 
-3. Consumer (Listener)
+3.  Consumer (Listener)
 
-    Another service (or same service) listening to that queue. 
+    Another service (or same service) listening to that queue.
 
-        consume queue -> invalidate Redis keys 
-
+        consume queue -> invalidate Redis keys
 
 **Why NOT synchronous calls?**
 
 - Synchronous (bad for microservices)
 
-    Service A -> waits -> Service B
+  Service A -> waits -> Service B
 
-    Problems: Blocking, Failures propagate, Tight coupling 
+  Problems: Blocking, Failures propagate, Tight coupling
 
-- Asynchronous 
+- Asynchronous
 
-    Service A -> sends message -> continues 
+  Service A -> sends message -> continues
 
-    Service B -> processes later 
+  Service B -> processes later
 
-    Problems: Non-blocking, Fault tolerant, Scalable, Loose coupling. 
+  Problems: Non-blocking, Fault tolerant, Scalable, Loose coupling.
 
-- Synchronous calls create tight coupling and cascading failures. Message queues create loose coupling and resilient systems. 
+- Synchronous calls create tight coupling and cascading failures. Message queues create loose coupling and resilient systems.
+
+## What purpose does RabbitMQ server in our app
+
+Our app has multiple services.
+
+    - Author Service: Creates / edits blogs
+    - Blog Service: Serves blogs + Redis cache
+    - Redis: Caches blog lists
+    - Postgres: source of truth
+
+The real problem: When Author Service updates a blog, this happens -
+
+1. Blog data in Postgres changes
+2. Redis cache in Blog Service becomes STALE
+3. Blog Service does NOT know something changed
+
+   Redis doesn't auto-update
+   Services don't auto-talk
+
+   We need a MESSANGER.
+
+**RabbitMQ = the messenger**
+
+Think of RabbitMQ as: A post office between services
+
+- One service drops a message
+- Another service picks it up
+- They don't talk directly
+- They don't block each other
+
+**Without RabbitMQ**
+
+Author Service: Hey Blog Service, I updated a blog, clear your cache
+
+Blog Service: I'm down/busy/restarting
+
+App breaks or cache stays stale.
+
+**With RabbitMQ**
+
+Author Service: I'll leave a note in the post office.
+
+RabbitMQ: Got it. I'll hold it safely.
+
+Blog Service: Whenever I'm free, i'll check messages.
+
+Loosing coupling, Reliable, Async, Scales
+
+**What exactly happening in our app**
+
+- Producer (Author Service) - When a blog is created/edited/deleted:
+
+    channel.sendToQueue("cache-invalidation", Buffer.from(JSON.stringify({
+        action: "invalidateCache",
+        keys: ["blogs:*"]
+    })));
+
+Meaning: Any cache that starts with `blogs:*` is now invalid.
+
+
+- Consumer (Blog Service)
+
+startCacheConsumer();
+
+    It connects to RabbitMQ, Listens to 'cache-invalidation' queue, Receives message, Deletes Redis keys, Rebuilds cache 
+
+
+**RabbitMQ in our app is a middleman that lets services communicate without knowing about each other. When a blog changes, the author service drops a small "cache invalidation" note into RabbitMQ. The blog service listens for these notes and clears Redis accordingly.**
+
+
+## Interview Ready
+
+
+1. **What is RabbitMQ?**
+
+RabbitMQ is a message broker that enables asynchronous communication between different services. 
+
+It allows one service to publish events without knowing which service will consume them, improving scalability, reliability, and decoupling in distributed systems. 
+
+2. **Why did you use RabbitMQ in your app?**
+
+In my application, RabbitMQ is used to propagate cache invalidation events between microservices. 
+
+When a blog is created, updated, or deleted in the Author Service, it publishes an event to RabbitMQ. 
+
+The Blog Service consumes this event and clears or rebuilds its Redis cache so users always see fresh data. 
+
+3. **Why not just call the Blog Service API directly?**
+
+Direct API calls tightly couple services and introduce failure propagation. With RabbitMQ, the producer doesn't care if the consumer is temporarily down. 
+
+Messages are queued and processed when the consumer becomes available. 
+
+Loose coupling, fault tolerance, resilience and scalable 
+
+
+4. **Real-life use case of RabbitMQ**
+
+
+- eCommerce
+
+When an order is placed: 
+
+Order placed                Order Service 
+
+Send email                  Email Service
+
+Update Inventory            Inventory Service 
+
+Generate Invoice            Billing Service 
+
+
+- Email / Notifications 
+
+User signs up; App publishes `user.registered`; Email service consumes and sends welcome email; If email fails, signup still succeeds 
+
+- Payment processing 
+
+Payment succeeds, Emit `payment.success`, Trigger: invoice generation, leder update, analytics 
+
+
+
+
+docker run -d --hostname rabbitmq-host --name rabbitmq-container -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=admin123 -p 5672:5672 -p 15672:15672 rabbitmq:3-management

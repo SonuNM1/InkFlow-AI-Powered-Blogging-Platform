@@ -1,7 +1,11 @@
 import { createClient } from "redis";
 import chalk from "chalk";
+const redisUrl = process.env.REDIS_URL;
+if (!redisUrl) {
+    throw new Error("REDIS_URL not defined");
+}
 export const redisClient = createClient({
-    url: process.env.REDIS_URL,
+    url: redisUrl,
     socket: {
         reconnectStrategy: (retries) => {
             console.log(chalk.yellow(`Redis reconnect attempt: ${retries}`));

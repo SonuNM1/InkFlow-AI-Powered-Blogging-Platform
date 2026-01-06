@@ -41,11 +41,17 @@ export const isAuth = (
 
     const token = authHeader.split(" ")[1];
 
+    const secret = process.env.JWT_SECRET ; 
+
+    if(!secret){
+      throw new Error("JWT_SECRET not defined") ; 
+    }
+
     // verify token
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET!
+      secret
     ) as any;
 
     // validate payload

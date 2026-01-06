@@ -19,7 +19,7 @@ export const startCacheConsumer = async () => {
         await channel.assertQueue(queueName, {
             durable: true // messages survive RabbitMQ restart 
         });
-        console.log("📡 Blog Service cache consumer started");
+        console.log(chalk.green.bold("📡 Blog Service cache consumer started"));
         // Start consuming messages - RabbitMQ will push messages to this callback 
         channel.consume(queueName, async (msg) => {
             if (!msg)
@@ -54,14 +54,13 @@ export const startCacheConsumer = async () => {
                 channel.ack(msg); // tell RabbitMQ message processed successfully
             }
             catch (error) {
-                console.error("❌ Error processing cache invalidation in blog service: ", error);
+                console.error(chalk.red.bold("❌ Error processing cache invalidation in blog service: ", error));
                 channel.nack(msg, false, true); // Requeue message if processing failed 
             }
         });
     }
     catch (error) {
-        console.error(chalk.red.bold("Failed to start RabbitMQ Consumer"));
+        console.error(chalk.red.bold("Failed to start RabbitMQ Consumer: ", error));
     }
 };
-startCacheConsumer(); // Start consumer when service boots 
 //# sourceMappingURL=Consumer.js.map
