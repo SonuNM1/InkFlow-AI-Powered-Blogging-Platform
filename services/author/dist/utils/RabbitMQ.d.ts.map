@@ -1,1 +1,1 @@
-{"version":3,"file":"RabbitMQ.d.ts","sourceRoot":"","sources":["../../src/utils/RabbitMQ.ts"],"names":[],"mappings":"AAOA,eAAO,MAAM,eAAe,qBAiB3B,CAAA;AAID,eAAO,MAAM,cAAc,GAAU,WAAW,MAAM,EAAE,SAAS,GAAG,kBAyBnE,CAAA;AAQD,eAAO,MAAM,kBAAkB,GAAS,WAAW,MAAM,EAAE,kBAmB1D,CAAA"}
+{"version":3,"file":"RabbitMQ.d.ts","sourceRoot":"","sources":["../../src/utils/RabbitMQ.ts"],"names":[],"mappings":"AAUA,eAAO,MAAM,eAAe,qBA8C3B,CAAC;AAIF,eAAO,MAAM,cAAc,GAAU,WAAW,MAAM,EAAE,SAAS,GAAG,kBAyBnE,CAAC;AASF,eAAO,MAAM,kBAAkB,GAAU,WAAW,MAAM,EAAE,kBAkB3D,CAAC"}

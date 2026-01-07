@@ -16,96 +16,96 @@ interface CacheInvalidationMessage {
   keys: string[];
 }
 
-// Starts a RabbitMQ consumer that listens for cache invalidation events 
+// Starts a RabbitMQ consumer that listens for cache invalidation events
 
 export const startCacheConsumer = async () => {
   try {
-
-    // Connect to RabbitMQ Server 
+    // Connect to RabbitMQ Server
 
     const connection = await amqp.connect({
       protocol: "amqp",
-      hostname: "localhost",
-      port: 5672,
-      username: "admin",
-      password: "admin123",
+      hostname: process.env.Rabbitmq_Host,
+      port: Number(process.env.Rabbitmq_Port),
+      username: process.env.Rabbitmq_Username,
+      password: process.env.Rabbitmq_Password,
     });
 
-    const channel = await connection.createChannel() ; // create a channel (communication pipe)
+    const channel = await connection.createChannel(); // create a channel (communication pipe)
 
-    const queueName = "cache-invalidation"  // queue name that producer publishes messages to 
+    const queueName = "cache-invalidation"; // queue name that producer publishes messages to
 
     // Ensure queue exists (safe even if already exists)
 
-    await channel.assertQueue(
-        queueName, 
-        {
-            durable: true   // messages survive RabbitMQ restart 
-        }
-    )
+    await channel.assertQueue(queueName, {
+      durable: true, // messages survive RabbitMQ restart
+    });
 
-    console.log(chalk.green.bold("📡 Blog Service cache consumer started")) ; 
+    console.log(chalk.green.bold("📡 Blog Service cache consumer started"));
 
-    // Start consuming messages - RabbitMQ will push messages to this callback 
+    // Start consuming messages - RabbitMQ will push messages to this callback
 
-    channel.consume(queueName, async(msg) => {
-            if(!msg) return ; 
+    channel.consume(queueName, async (msg) => {
+      if (!msg) return;
 
-            try {
-                const content = JSON.parse(msg.content.toString()) as CacheInvalidationMessage ; // Parse message content 
+      try {
+        const content = JSON.parse(
+          msg.content.toString()
+        ) as CacheInvalidationMessage; // Parse message content
 
-                console.log("📩 Received cache invalidation message: ", content) 
+        console.log("📩 Received cache invalidation message: ", content);
 
-                // Invalidate cache 
+        // Invalidate cache
 
-                if(content.action === "invalidateCache"){
+        if (content.action === "invalidateCache") {
+          // Loop over cache key patterns (blogs:*)
 
-                    // Loop over cache key patterns (blogs:*)
+          for (const pattern of content.keys) {
+            const keys = await redisClient.keys(pattern); // Find matching Redis keys
 
-                    for(const pattern of content.keys){
+            if (keys.length > 0) {
+              await redisClient.del(keys); // delete old cache
 
-                        const keys = await redisClient.keys(pattern) ; // Find matching Redis keys 
+              console.log(
+                `🗑️ Blog service invalidated: ${keys.length} cache keys matching: ${pattern}`
+              );
 
-                        if(keys.length > 0){
-                            await redisClient.del(keys) ; // delete old cache 
+              // Rebuild cache immediately (warm cache). This avoids first user hitting DB
 
-                            console.log(`🗑️ Blog service invalidated: ${keys.length} cache keys matching: ${pattern}`)
+              const searchQuery = "";
+              const category = "";
 
-                            // Rebuild cache immediately (warm cache). This avoids first user hitting DB
+              const cacheKey = `blogs:${searchQuery}:${category}`;
 
-                            const searchQuery = "" ; 
-                            const category = "" ; 
+              // Fetch fresh data from DB
 
-                            const cacheKey = `blogs:${searchQuery}:${category}`
-
-                            // Fetch fresh data from DB 
-
-                            const blogs = await sql `
+              const blogs = await sql`
                                 SELECT * FROM blogs ORDER BY create_at DESC
-                            ` ; 
+                            `;
 
-                            // Store fresh data in redis 
+              // Store fresh data in redis
 
-                            await redisClient.set(cacheKey, JSON.stringify(blogs), {
-                                EX: 3600
-                            })
+              await redisClient.set(cacheKey, JSON.stringify(blogs), {
+                EX: 3600,
+              });
 
-                            console.log("🔄️ Cache rebuilt with key: ", cacheKey)
-                        }
-                    }
-                }
-
-                channel.ack(msg) ; // tell RabbitMQ message processed successfully
-
-            } catch (error) {
-                console.error(chalk.red.bold("❌ Error processing cache invalidation in blog service: ", error))
-
-                channel.nack(msg, false, true) ; // Requeue message if processing failed 
+              console.log("🔄️ Cache rebuilt with key: ", cacheKey);
             }
-    })
+          }
+        }
 
+        channel.ack(msg); // tell RabbitMQ message processed successfully
+      } catch (error) {
+        console.error(
+          chalk.red.bold(
+            "❌ Error processing cache invalidation in blog service: ",
+            error
+          )
+        );
+
+        channel.nack(msg, false, true); // Requeue message if processing failed
+      }
+    });
   } catch (error) {
-    console.error(chalk.red.bold("Failed to start RabbitMQ Consumer: ", error))
+    console.error(chalk.red.bold("Failed to start RabbitMQ Consumer: ", error));
   }
 };
-
