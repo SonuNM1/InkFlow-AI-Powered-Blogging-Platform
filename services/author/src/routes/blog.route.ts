@@ -13,6 +13,6 @@ router.get("/my", isAuth, getMyBlogs)
 
 router.post("/ai/title", isAuth, aiRateLimiter, AITitleResponse)
 router.post("/ai/description", isAuth,  aiRateLimiter, AIDescriptionResponse)
-router.post("/ai/blog", aiRateLimiter, isAuth, AIBlogResponse)
+router.post("/ai/blog", isAuth, aiRateLimiter, AIBlogResponse)
 
 export default router ; 

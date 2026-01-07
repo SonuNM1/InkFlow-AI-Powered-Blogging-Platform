@@ -105,6 +105,12 @@ export const updateUser = TryCatch(async (req: AutheticatedRequest, res) => {
       new: true
     }
   ) 
+
+  if(!user){
+    return res.status(404).json({
+      message: "User not found"
+    })
+  }
   
   const token = jwt.sign(
     {
@@ -126,6 +132,13 @@ export const updateUser = TryCatch(async (req: AutheticatedRequest, res) => {
 })
 
 export const updateProfilePic = TryCatch(async(req: AutheticatedRequest, res) => {
+
+  if(!req.user){
+    return res.status(401).json({
+      message: "Unauthorized"
+    })
+  }
+
   const file = req.file ; 
 
   if(!file){
@@ -157,6 +170,12 @@ export const updateProfilePic = TryCatch(async(req: AutheticatedRequest, res) =>
       new: true 
     }
   ) ; 
+
+  if(!user){
+    return res.status(404).json({
+      message: "User not found"
+    })
+  }
 
   const token = jwt.sign(
     {

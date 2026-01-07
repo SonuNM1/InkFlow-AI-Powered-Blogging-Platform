@@ -336,3 +336,34 @@ Payment succeeds, Emit `payment.success`, Trigger: invoice generation, leder upd
 
 
 docker run -d --hostname rabbitmq-host --name rabbitmq-container -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=admin123 -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+
+## Do companies rebuild & redeploy for every code change? 
+
+
+Yes - but not manually. Operationally it's automated. 
+
+**How it works in real production (CI/CD)**
+
+Dev pushes code -> CI Pipeline -> Docker build -> Docker push -> Deploy 
+
+Example (GitHub Actions / GitLab CI) - 
+
+    on: push to main
+      - run tests 
+      - docker build 
+      - docker push 
+      - deploy to prod 
+
+So, Developers don't run `docker build` manually. Developers don't push to Docker Hub manually. 
+
+✅ CI does it automatically. 
+
+
+**Why rebuild every time?**
+
+Because: 
+
+- Docker images are immutable 
+- You never change a running container 
+- You always deploy a new version 

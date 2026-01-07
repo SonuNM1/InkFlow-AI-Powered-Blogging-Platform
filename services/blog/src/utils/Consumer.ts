@@ -2,6 +2,7 @@ import amqp from "amqplib";
 import { redisClient } from "./redis.js";
 import { sql } from "./db.js";
 import chalk from "chalk";
+import { start } from "repl";
 
 /*
 Shape of message coming from RabbitMQ 
@@ -20,7 +21,8 @@ interface CacheInvalidationMessage {
 
 export const startCacheConsumer = async () => {
   try {
-    // Connect to RabbitMQ Server
+
+    // Connect to RabbitMQ Server - this connection is a TCP socket underneath
 
     const connection = await amqp.connect({
       protocol: "amqp",
@@ -30,7 +32,34 @@ export const startCacheConsumer = async () => {
       password: process.env.Rabbitmq_Password,
     });
 
-    const channel = await connection.createChannel(); // create a channel (communication pipe)
+    // RabbitMQ can emit an 'error' event at any time. If this is unhandled, Node.js will crash 
+
+    connection.on("error", (err) => {
+      console.error(chalk.red("❌ RabbitMQ Connection error: ", err.message));
+    })
+
+    // Fired when RabbitMQ closes the connection (restart, crash, network issue). We automatically retry after 5 seconds 
+
+    connection.on("close", () => {
+      console.warn(
+        chalk.yellow.bold("⚠️ RabbitMQ connection closed. Reconnecting in 5s...")
+      ) ; 
+      setTimeout(startCacheConsumer, 5000);
+    })
+
+    // Create a channel - channel is a lightweight "virtual connection" used for publishing/consuming messages 
+
+    const channel = await connection.createChannel(); 
+
+    // Channels also emit error events. These must be handled separately 
+
+    channel.on("error", (err) => {
+      console.error(chalk.red.bold("❌ RabbitMQ Channel error: ", err.message));
+    })
+
+    channel.on("close", () => {
+      console.warn(chalk.yellow.bold("⚠️ RabbitMQ channel closed.")) ;
+    })
 
     const queueName = "cache-invalidation"; // queue name that producer publishes messages to
 
@@ -109,3 +138,14 @@ export const startCacheConsumer = async () => {
     console.error(chalk.red.bold("Failed to start RabbitMQ Consumer: ", error));
   }
 };
+
+
+/* 
+This file starts a RabbitMQ consumer for the Blog Service. 
+
+Purpose: Listens for cache invalidation events published by other services. Deletes stale Redis cache keys, Optionally rebuilds the cache immediately. 
+
+Keeps cache consistent across microservices 
+Prevents serving stale blog data 
+Avoid first-user cache miss after writes 
+*/

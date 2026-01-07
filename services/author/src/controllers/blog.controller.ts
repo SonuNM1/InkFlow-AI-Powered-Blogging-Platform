@@ -9,6 +9,12 @@ import openai from "../utils/openAi.js";
 export const createBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
   const { title, description, blogcontent, category } = req.body;
 
+  if(!req.user){
+    return res.status(401).json({
+      message: "Unauthorized. Kindly login to proceed!"
+    })
+  }
+
   const file = req.file;
 
   if (!file) {
@@ -51,6 +57,14 @@ export const createBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
         ) RETURNING *
         `;
 
+  const createdBlog = result[0] ; 
+
+  if(!createdBlog){
+    return  res.status(500).json({
+      message: "Failed to create blog",
+    });
+  }
+
   await invalidateCacheJob(["blogs:*"]); // invalidate
 
   res.json({
@@ -60,35 +74,46 @@ export const createBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
 });
 
 export const updateBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
+
   const { id } = req.params;
   const { title, description, blogcontent, author, category } = req.body;
 
+  const userId = req.user?.userId ; 
+
+  if(!userId){
+    return res.status(401).json({
+      message: "Unauthorized. Kindly login to proceed!"
+    })
+  }
+
   const file = req.file;
 
-  const blog = await sql`
+  const blogResult = await sql`
         SELECT * FROM blogs WHERE id = ${id}
     `;
 
-  if (!blog.length) {
+  const blog = blogResult[0] ; 
+
+  if(!blog){
     return res.status(404).json({
       message: "No blog with this id",
     });
   }
 
-  if (blog[0].author !== req.user?.userId) {
+  if (blog.author !== userId) {
     return res.status(404).json({
       message: "You are not author of this blog",
     });
   }
 
-  let imageUrl = blog[0].image;
+  let imageUrl = blog.image;
 
   if (file) {
     const fileBuffer = getBuffer(file);
 
-    if (!fileBuffer || !fileBuffer.content) {
+    if (!fileBuffer.content) {
       return res.status(400).json({
-        message: "Failed to generate buffer",
+        message: "Invalid image buffer",
       });
     }
 
@@ -99,38 +124,56 @@ export const updateBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
     imageUrl = cloud.secure_url;
   }
 
-  const updatedBlog = await sql`
+  const updatedResult = await sql`
     UPDATE blogs SET 
-        title=${title || blog[0].title},
-        description=${description || blog[0].description},
+        title=${title || blog.title},
+        description=${description ?? blog.description},
         image=${imageUrl},
-        blogcontent=${blogcontent || blog[0].blogcontent},
-        category=${category || blog[0].category}
-
+        blogcontent=${blogcontent ?? blog.blogcontent},
+        category=${category ?? blog.category}
         WHERE id=${id}
         RETURNING *
   `;
+
+  const updatedBlog = updatedResult[0] ;
+
+  if(!updatedBlog){
+    return res.status(500).json({
+      message: "Failed to update blog",
+    });
+  }
 
   await invalidateCacheJob(["blogs:*", `blog:${id}`]); // invalidate
 
   res.json({
     message: "Blog updated",
-    blog: updatedBlog[0],
+    blog: updatedBlog,
   });
 });
 
 export const deleteBlog = TryCatch(async (req: AuthenticatedRequest, res) => {
-  const blog = await sql`
+
+  const userId = req.user?.userId ; 
+
+  if(!userId){
+    return res.status(401).json({
+      message: "Unauthorized. Kindly login to proceed!"
+    })
+  }
+
+  const blogResult = await sql`
     SELECT * FROM blogs WHERE id=${req.params.id}
   `;
 
-  if (!blog.length) {
+  const blog = blogResult[0] ;
+
+  if (!blog) {
     return res.status(404).json({
       message: "No blog with this id",
     });
   }
 
-  if (blog[0].author !== req.user?.userId) {
+  if (blog.author !== userId) {
     return res.status(404).json({
       message: "You are not author of this blog",
     });
@@ -181,6 +224,12 @@ export const getMyBlogs = TryCatch(
 
 export const AITitleResponse = TryCatch(async (req, res) => {
   // Extract input sent from frontend. Example: "this is my title"
+
+  if(!req.user){
+    return res.status(401).json({
+      message: "Unauthorized. Kindly login to proceed!"
+    })
+  }
 
   const { text } = req.body;
 
@@ -239,6 +288,10 @@ export const AITitleResponse = TryCatch(async (req, res) => {
 
 export const AIDescriptionResponse = TryCatch(async (req, res) => {
 
+  if(!req.user){
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
   const { title, description, forceRegenerate } = req.body; // extracting title and desc from req body
 
   if (!title && !description) {
@@ -284,6 +337,11 @@ export const AIDescriptionResponse = TryCatch(async (req, res) => {
 });
 
 export const AIBlogResponse = TryCatch(async (req, res) => {
+
+  if(!req.user){
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
   const { blog } = req.body;
 
   if (!blog) {

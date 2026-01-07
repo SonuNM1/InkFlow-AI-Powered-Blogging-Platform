@@ -2,26 +2,34 @@ import express from "express";
 import chalk from "chalk";
 import dotenv from "dotenv";
 import { sql } from "./utils/db.js";
-import blogRoutes from './routes/blog.route.js'
-import { v2 as cloudinary } from 'cloudinary';
+import blogRoutes from "./routes/blog.route.js";
+import { v2 as cloudinary } from "cloudinary";
 import { connectRabbitMQ } from "./utils/RabbitMQ.js";
-import cors from 'cors'
+import cors from "cors";
 
 dotenv.config();
 const app = express();
 
-app.use(express.json()) ; 
-app.use(cors()) ; 
+app.use(express.json());
+app.use(cors());
 
-connectRabbitMQ() ; 
+connectRabbitMQ();
 
 const PORT = process.env.PORT || 5001;
 
-cloudinary.config({ 
-        cloud_name: process.env.CLOUD_NAME, 
-        api_key: process.env.CLOUD_API_KEY, 
-        api_secret: process.env.CLOUD_API_SECRET
-    });
+if (
+  !process.env.CLOUD_NAME ||
+  !process.env.CLOUD_API_KEY ||
+  !process.env.CLOUD_API_SECRET
+) {
+  throw new Error("Cloudinary env variables missing");
+}
+
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
+});
 
 async function initDB() {
   try {
@@ -55,7 +63,7 @@ async function initDB() {
                 create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `;
-      await sql`
+    await sql`
         CREATE TABLE IF NOT EXISTS ai_usage (
           id SERIAL PRIMARY KEY, 
           user_id VARCHAR(255) NOT NULL, 
@@ -64,7 +72,7 @@ async function initDB() {
           error_message TEXT, 
           create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
         )
-      `
+      `;
 
     console.log(chalk.yellow.bold("DB initialised successfully"));
   } catch (error) {
@@ -72,7 +80,7 @@ async function initDB() {
   }
 }
 
-app.use('/api/v1', blogRoutes)
+app.use("/api/v1", blogRoutes);
 
 initDB().then(() => {
   app.listen(PORT, () => {

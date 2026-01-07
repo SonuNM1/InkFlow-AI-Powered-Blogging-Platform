@@ -4,7 +4,10 @@
     "outDir": "./dist",
     "module": "nodenext",
     "target": "es2020",
+
     "types": [],
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+    
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -17,5 +20,7 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-  }
+  },
+  "include": ["src/**/*"], 
+  "exclude": ["dist", "node_modules"]
 }

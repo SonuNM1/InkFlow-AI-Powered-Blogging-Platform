@@ -15,7 +15,7 @@ export const TryCatch = (handler: RequestHandler): RequestHandler => {
         await sql`
           INSERT INTO ai_usage (user_id, feature, status, error_message)
           VALUES (
-            ${req.user.id},
+            ${req.user.userId},
             ${req.originalUrl.toUpperCase()},
             'FAILED',
             ${error.message}

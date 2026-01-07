@@ -16,9 +16,11 @@ import axios from "axios";
 
 // Service URLs
 
-export const user_service = "http://localhost:5000";
-export const author_service = "http://localhost:5001";
-export const blog_service = "http://localhost:5002";
+export const user_service = "https://user-service-jll3.onrender.com";
+
+export const author_service = "https://author-service-uigu.onrender.com";
+
+export const blog_service = "https://blog-service-mgth.onrender.com";
 
 // User Interface - A TypeScript shape for user data. This lets TS know: "this is what a user looks like"
 

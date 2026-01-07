@@ -43,12 +43,25 @@ export const isAuth = (
 
     const token = authHeader.split(" ")[1];
 
+    if(!token){
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized - No token",
+      });
+    }
+
+    const secret = process.env.JWT_SECRET; 
+
+    if(!secret){
+      throw new Error("JWT_SECRET is not defined in environment variables");
+    }
+
     // verify token
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as string
-    ) as JwtUserPayload;
+      secret 
+    ) as unknown as JwtUserPayload;
 
     // validate payload
 
@@ -64,7 +77,9 @@ export const isAuth = (
     req.user = {
       userId: decoded.userId,
       name: decoded.name,
-      image: decoded.image 
+      ...(decoded.image && {
+        image: decoded.image 
+      })
     }
 
     next();

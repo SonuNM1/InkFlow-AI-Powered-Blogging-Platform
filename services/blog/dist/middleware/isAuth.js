@@ -1,45 +1,29 @@
-import chalk from "chalk";
-import jwt from "jsonwebtoken";
-// Authentication middleware for BLOG SERVICE - we don't query MongoDB here, we only verify JWT and extract userId
-export const isAuth = (req, res, next) => {
+import { NextFunction, Request, Response } from "express";
+import jwt, { JwtPayload } from "jsonwebtoken";
+export const isAuth = async (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization; // read authorization header
-        // validate header
+        const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return res.status(401).json({
-                success: false,
-                message: "Unauthorized - No token",
+            res.status(401).json({
+                message: "Please Login - No auth header",
             });
+            return;
         }
-        // extract token
         const token = authHeader.split(" ")[1];
-        const secret = process.env.JWT_SECRET;
-        if (!secret) {
-            throw new Error("JWT_SECRET not defined");
-        }
-        // verify token
-        const decoded = jwt.verify(token, secret);
-        // validate payload
-        if (!decoded?.userId) {
-            return res.status(401).json({
-                success: false,
-                message: "Invalid token payload",
+        const decodeValue = jwt.verify(token, process.env.JWT_SEC);
+        if (!decodeValue || !decodeValue.user) {
+            res.status(401).json({
+                message: "Invalid token",
             });
+            return;
         }
-        // attach ONLY userId to request
-        // req.userId = decoded.userId;
-        req.user = {
-            userId: decoded.userId,
-            name: decoded.name,
-            image: decoded.image
-        };
+        req.user = decodeValue.user;
         next();
     }
     catch (error) {
-        console.log(chalk.red.bold("Auth error-author:", error));
-        return res.status(401).json({
-            success: false,
-            message: "Invalid or expired token ",
+        console.log("JWT verification error: ", error);
+        res.status(401).json({
+            message: "Please Login - Jwt error",
         });
     }
 };
