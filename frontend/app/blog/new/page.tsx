@@ -15,7 +15,7 @@ import { RefreshCw } from "lucide-react";
 import Cookies from "js-cookie";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { author_service, useAppData } from "@/app/context/AppContext";
+import { author_service, useAppData, blogCategories } from "@/app/context/AppContext";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { ButtonSkeleton } from "@/components/skeletons/ButtonSkeleton";
@@ -24,17 +24,24 @@ import { aiDebounce } from "@/lib/debounce";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
-export const blogCategories = [
-  "Technology",
-  "Health",
-  "Finance",
-  "Travel",
-  "Education",
-  "Entertainment",
-  "Study",
-];
+interface BlogSubmitResponse {
+  message: string; 
+}
+
+interface AiTitleResponse {
+  title: string ; 
+}
+
+interface AiDescriptionResponse {
+  description: string ;
+} 
+
+interface AiBlogResponse {
+  html: string; 
+}
 
 const AddBlog = () => {
+
   const editor = useRef(null);
 
   const { fetchBlogs } = useAppData();
@@ -206,7 +213,7 @@ const AddBlog = () => {
     try {
       const token = Cookies.get("token");
 
-      const { data } = await axios.post(
+      const { data } = await axios.post<BlogSubmitResponse>(
         `${author_service}/api/v1/blog/new`,
         formDataToSend,
         {
@@ -264,7 +271,7 @@ const AddBlog = () => {
     try {
       setAiTitle(true);
 
-      const { data } = await axios.post(
+      const { data } = await axios.post<AiTitleResponse>(
         `${author_service}/api/v1/ai/title`, 
         { text: formData.title }, 
         {
@@ -296,7 +303,7 @@ const AddBlog = () => {
     try {
       setAiDescription(true);
 
-      const { data } = await axios.post(
+      const { data } = await axios.post<AiDescriptionResponse>(
         `${author_service}/api/v1/ai/description`,
         {
           title: formData.title,
@@ -337,7 +344,7 @@ const AddBlog = () => {
     try {
       setAiBlogLoading(true);
 
-      const { data } = await axios.post(`${author_service}/api/v1/ai/blog`, {
+      const { data } = await axios.post<AiBlogResponse>(`${author_service}/api/v1/ai/blog`, {
         blog: formData.blogContent,
       }, {
         headers: {

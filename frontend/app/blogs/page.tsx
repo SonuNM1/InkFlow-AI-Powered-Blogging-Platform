@@ -55,7 +55,6 @@ const Blogs = () => {
                         title={e.title}
                         desc={e.description}
                         id={e.id}
-                        time={e.created_at}
                         category={e.category}
                       />
                     );
@@ -68,7 +67,7 @@ const Blogs = () => {
 
       <Pagination
         pagination={pagination}
-        onPageChange={(page) => {
+        onPageChange={(page: number) => {
           router.push(`/blogs?page=${page}`)
         }}
       />

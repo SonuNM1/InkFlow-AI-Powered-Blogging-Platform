@@ -17,14 +17,19 @@ import {
   author_service,
   blog_service,
   useAppData,
+  blogCategories,
 } from "@/app/context/AppContext";
 import toast from "react-hot-toast";
 import axios from "axios";
-import { blogCategories } from "../../new/page";
 import Cookies from "js-cookie";
 import { useParams, useRouter } from "next/navigation";
+import type { SingleBlogResponse } from "@/types";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
+
+interface ApiResponse {
+   message: string; 
+}
 
 const EditBlogPage = () => {
   const editor = useRef(null);
@@ -82,14 +87,14 @@ const EditBlogPage = () => {
     []
   );
 
-  const [existingImage, setExistingImage] = useState(null);
+  const [existingImage, setExistingImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBlog = async () => {
       setLoading(true);
 
       try {
-        const { data } = await axios.get(`${blog_service}/api/v1/blog/${id}`);
+        const { data } = await axios.get<SingleBlogResponse>(`${blog_service}/api/v1/blog/${id}`);
 
         const blog = data?.blog;
 
@@ -98,11 +103,11 @@ const EditBlogPage = () => {
           description: blog.description,
           category: blog.category,
           image: null,
-          blogcontent: blog.blogcontent,
+          blogContent: blog.blogcontent,
         });
 
         setContent(blog.blogcontent);
-        setExistingImage(blog.image);
+        setExistingImage(blog.image ?? null);
       } catch (error) {
         console.log("Edit page error: ", error);
       } finally {
@@ -130,7 +135,7 @@ const EditBlogPage = () => {
     try {
       const token = Cookies.get("token");
 
-      const { data } = await axios.post(
+      const { data } = await axios.post<ApiResponse>(
         `${author_service}/api/v1/blog/${id}`,
         formDataToSend,
         {

@@ -1,21 +1,14 @@
 "use client"
 
-"use client";
-
-import React, { useEffect, useRef, useState } from "react";
-import { useAppData, User, user_service } from "@/app/context/AppContext";
+import React, { useEffect, useState } from "react";
+import { user_service } from "@/app/context/AppContext";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import Cookies from "js-cookie";
-import toast from "react-hot-toast";
 import Loading from "@/components/loading";
 import { Facebook, Instagram, Linkedin } from "lucide-react";
 import axios from "axios";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import {useParams, useRouter } from "next/navigation";
+import {useParams } from "next/navigation";
+import { User } from "@/app/context/AppContext";
 
 const UserProfilePage = () => {
 
@@ -25,7 +18,7 @@ const UserProfilePage = () => {
 
     async function fetchUser(){
         try {
-            const {data} = await axios.get(
+            const {data} = await axios.get<User>(
                 `${user_service}/api/v1/user/${id}`
             ) ; 
 

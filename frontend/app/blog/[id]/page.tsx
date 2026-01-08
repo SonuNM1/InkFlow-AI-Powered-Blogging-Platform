@@ -23,18 +23,11 @@ import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import axios from "axios";
+import type { BlogDTO, AuthorDTO, SingleBlogResponse, CommentDTO } from "@/types";
 
-// Types - defines the shape of a comment object coming from backend
-interface Comment {
-  id: string;
-  userid: string;
-  comment: string;
-  create_at: string;
-  username: string;
-  userimage: string;
-}
 
 const BlogPage = () => {
+
   // Global state from context. isAuth - user logged in or not, user - logged in user data, savedBlogs - blogs saved by user, fetchBlogs - refresh blog list after delete, getSavedBlogs - refresh saved blogs
 
   const { isAuth, user, fetchBlogs, savedBlogs, getSavedBlogs } = useAppData();
@@ -42,11 +35,11 @@ const BlogPage = () => {
   const { id } = useParams(); // blog id from Url
   const router = useRouter(); // for navigation
 
-  const [blog, setBlog] = useState<Blog | null>(null);
-  const [author, setAuthor] = useState<User | null>(null);
+  const [blog, setBlog] = useState<BlogDTO | null>(null);
+  const [author, setAuthor] = useState<AuthorDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [comment, setComment] = useState("");
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<CommentDTO[]>([]);
   const [saved, setSaved] = useState(false);
 
   // Using separate loading states 
@@ -60,10 +53,12 @@ const BlogPage = () => {
     try {
       setLoading(true);
 
-      const { data } = await axios.get(`${blog_service}/api/v1/blog/${id}`);
+      const { data } = await axios.get<SingleBlogResponse>(
+        `${blog_service}/api/v1/blog/${id}`
+      );
 
       setBlog(data.blog);
-      setAuthor(data.author);
+      setAuthor(data?.author);
     } catch (error:any) {
       console.log("fetch single blog error: ", error);
 
@@ -86,7 +81,7 @@ const BlogPage = () => {
     try {
       setLoading(true);
 
-      const { data } = await axios.get(`${blog_service}/api/v1/comments/${id}`);
+      const { data } = await axios.get<CommentDTO[]>(`${blog_service}/api/v1/comments/${id}`);
 
       setComments(data);
     } catch (error) {
@@ -154,7 +149,7 @@ const BlogPage = () => {
    
     if(!comment.trim()) return ; 
 
-    const optimisticComment = {
+    const optimisticComment: CommentDTO = {
       id: crypto.randomUUID(), 
       comment, 
       userid: user!._id, 
@@ -253,6 +248,10 @@ const BlogPage = () => {
   }
 
   if(pageLoading){
+    return <Loading/>
+  }
+
+  if(!blog || !author){
     return <Loading/>
   }
 

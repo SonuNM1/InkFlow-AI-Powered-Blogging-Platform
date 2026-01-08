@@ -10,6 +10,21 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import axios from 'axios';
 
+interface UpdateUserResponse {
+  token: string;
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+    image: string;
+    instagram?: string;
+    facebook?: string;
+    linkedin?: string;
+    bio?: string;
+  }
+}
+
+
 // handles profile update form 
 
 const ProfileEditModal = ({
@@ -34,7 +49,7 @@ const ProfileEditModal = ({
         try {
             const token = Cookies.get('token') ; 
 
-            const res = await axios.post(
+            const res = await axios.post<UpdateUserResponse>(
                 `${user_service}/api/v1/user/update`, 
                 formData, 
                 {

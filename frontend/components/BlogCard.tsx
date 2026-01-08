@@ -8,6 +8,7 @@ interface BlogCardProps {
   desc: string;
   id: string;
   category: string;
+  time?: string; 
 }
 
 const BlogCard: React.FC<BlogCardProps> = ({

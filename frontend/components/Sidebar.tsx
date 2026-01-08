@@ -12,9 +12,7 @@ import {
   SidebarMenuItem,
 } from "./ui/sidebar";
 import { Input } from "./ui/input";
-import { BoxSelect } from "lucide-react";
-import { blogCategories } from "@/app/blog/new/page";
-import { useAppData } from "@/app/context/AppContext";
+import { useAppData, blogCategories } from "@/app/context/AppContext";
 
 const SideBar = () => {
   const {

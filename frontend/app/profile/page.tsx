@@ -7,13 +7,18 @@ import UserBlogs from '@/components/profile/UserBlogs';
 import Cookies from 'js-cookie';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import axios from 'axios';
+import { BlogDTO } from '@/types';
+
+interface MyBlogsResponse {
+  blogs: BlogDTO[] ; 
+}
 
 const ProfilePage = () => {
 
   const {user} = useAppData() ; 
   const router = useRouter() ; 
 
-  const [myBlogs, setMyBlogs] = useState([]) ; 
+  const [myBlogs, setMyBlogs] = useState<BlogDTO[]>([]) ; 
   const [loading, setLoading] = useState(true) ; 
 
   // auth guard 
@@ -31,7 +36,7 @@ const ProfilePage = () => {
       try {
         const token = Cookies.get("token") ; 
 
-        const res = await axios.get(
+        const res = await axios.get<MyBlogsResponse>(
           `${author_service}/api/v1/my`, 
           {
             headers: {

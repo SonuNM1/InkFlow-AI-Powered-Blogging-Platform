@@ -55,6 +55,26 @@ interface SavedBlogType {
   create_at : string 
 }
 
+interface FetchBlogsResponse {
+  blogs: Blog[] ; 
+  pagination: {
+    totalCount: number ; 
+    totalPages: number ; 
+    currentPage: number ; 
+    limit: number ; 
+  }
+}
+
+export const blogCategories = [
+  "Technology",
+  "Health",
+  "Finance",
+  "Travel",
+  "Education",
+  "Entertainment",
+  "Study",
+];
+
 // Context Type: Our global context will store: user -> either "User" object (logged in), null (logged out)
 
 interface AppContextType {
@@ -74,6 +94,7 @@ interface AppContextType {
   searchQuery: string ; 
 
   setCategory: React.Dispatch<React.SetStateAction<string>> ; 
+  category: string; 
 
   fetchBlogs: () => Promise<void> ; 
   savedBlogs: SavedBlogType[] | null ; 
@@ -160,7 +181,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setBlogLoading(true) ; 
     try {
       
-      const {data} = await axios.get(
+      const {data} = await axios.get<FetchBlogsResponse>(
         `${blog_service}/api/v1/blog/all`, 
         {
           params: {
@@ -190,7 +211,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     if(!token) return ; 
 
     try {
-      const {data} = await axios.get(
+      const {data} = await axios.get<SavedBlogType []>(
         `${blog_service}/api/v1/blog/saved/all`, 
         {
           headers: {
@@ -246,7 +267,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       searchQuery, 
       fetchBlogs, 
       savedBlogs,
-      getSavedBlogs
+      getSavedBlogs, 
+      category 
     }}>
       <GoogleOAuthProvider clientId="402233367112-tu1gba50m5ff25hn6r7a4783a7cqrda3.apps.googleusercontent.com">
         {children}
